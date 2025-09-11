@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>אזור אישי - ח.סבן (עם התראות)</title>
     <meta name="theme-color" content="#ffffff"/>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
     <link rel="icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
 
@@ -761,11 +761,10 @@
     <!-- רישום ה־service worker של FCM -->
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            navigator.serviceWorker.register('./firebase-messaging-sw.js')
                 .then(reg => console.log('FCM Service Worker registered:', reg.scope))
                 .catch(err => console.error('FCM SW registration failed:', err));
         }
     </script>
 </body>
 </html>
-
