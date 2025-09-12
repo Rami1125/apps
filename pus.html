@@ -66,7 +66,7 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
   document.getElementById('status').innerText = 'שולח...';
 
   try {
-    const response = await fetch('https://script.google.com/macros/s/AKfycbwEoccqzshjQjH0nuVkZTa9tIP2D4Luqc-CFk06vHfgjNEK-TFMRD0_DrsyOFeHLu3h/exec', {
+    const response = await fetch('https://script.google.com/macros/s/AKfycbwTeq2amLF4hX_16M3eo1CPmPDYJNwF-Mb-EdXEB2QjtxeQfvUiMtVAD5gVERzpKUGwnQ/exec', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ clientId, title, body })
