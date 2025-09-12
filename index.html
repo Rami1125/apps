@@ -241,6 +241,7 @@
                     }
                 }
 
+                
                 function cacheDomElements(){
                     Object.assign(dom, {
                         body: document.body,
@@ -334,7 +335,54 @@
                         }
                     });
                 }
-                
+                // בתוך הסקריפט הראשי שלך, אחרי הפונקציות הקיימות:
+
+// --- שמירת טוקן לקוח ב-localStorage ---
+function saveClientToken(token) {
+    if (!token) return;
+    localStorage.setItem('saban_client_token', token);
+    console.log('Client token saved:', token);
+}
+
+// --- שליחת התראה ללקוח דרך Firebase Cloud Messaging ---
+async function sendNotificationToClient(title, body) {
+    const token = localStorage.getItem('saban_client_token');
+    if (!token) {
+        console.warn('No client token found. Cannot send notification.');
+        return;
+    }
+
+    const FCM_SERVER_KEY = '6f0ee84804be82fbc306b605f553b9ebdb3d320f';
+
+    try {
+        const response = await fetch('https://fcm.googleapis.com/fcm/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `key=${FCM_SERVER_KEY}`
+            },
+            body: JSON.stringify({
+                to: token,
+                notification: {
+                    title: title,
+                    body: body,
+                    click_action: 'https://your-app-url.com'
+                }
+            })
+        });
+        const data = await response.json();
+        console.log('Notification response:', data);
+    } catch (err) {
+        console.error('Error sending notification:', err);
+    }
+}
+
+// --- דוגמה לשילוב עם FCM ---
+// כאן אתה יכול לקבל את הטוקן כשמשתמש מתחבר או בהרשאות הפוש
+// messaging.getToken({ vapidKey: '6f0ee84804be82fbc306b605f553b9ebdb3d320f' }).then((currentToken) => {
+//     if (currentToken) saveClientToken(currentToken);
+// }).catch(err => console.error(err));
+
                 function updateClock() {
                     const now = new Date();
                     dom.clock.textContent = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
