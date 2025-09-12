@@ -1,3 +1,26 @@
+import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging.js";
+
+const messaging = getMessaging(firebaseApp);
+
+navigator.serviceWorker.register('/apps/firebase-messaging-sw.js')
+  .then((registration) => {
+    console.log('FCM Service Worker registered:', registration.scope);
+
+    // בקשת token עם Service Worker מותאם
+    return getToken(messaging, { vapidKey: 'YOUR_VAPID_KEY_HERE', serviceWorkerRegistration: registration });
+  })
+  .then((currentToken) => {
+    if (currentToken) {
+      console.log('FCM Token:', currentToken);
+      // שמירה ב-localStorage או שליחה לשרת
+    } else {
+      console.log('No registration token available. Request permission to generate one.');
+    }
+  })
+  .catch((err) => {
+    console.error('An error occurred while retrieving token.', err);
+  });
+
 // Scripts for firebase and firebase messaging
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js');
