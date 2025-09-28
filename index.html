@@ -58,6 +58,7 @@
             --brand: #0b72b9; --accent: #ff9f1c; --bg: #f0f2f5; --card: #ffffff;
             --text-dark: #1a202c; --text-light: #4a5568; --text-muted: #718096;
             --border: #e2e8f0; --success: #38a169; --warning: #dd6b20; --danger: #e53e3e;
+            --info: #3182ce; /* כחול בהיר - מידע */
             --radius: 16px; --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             --page-transition-duration: 0.4s;
         }
@@ -67,8 +68,51 @@
         @keyframes logoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
         @keyframes subtle-pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(11, 114, 185, 0.3); } 70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(11, 114, 185, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(11, 114, 185, 0); } }
         @keyframes overdue-pulse { 0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4); } 70% { box-shadow: 0 0 0 12px rgba(229, 62, 62, 0); } 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); } }
-        @keyframes truck-drive { 0% { transform: translateX(20px); } 100% { transform: translateX(-20px); } }
         @keyframes siren-blink { 0%, 100% { background-color: #ffc107; box-shadow: 0 0 5px #ffc107; } 50% { background-color: #ff9800; box-shadow: 0 0 15px #ff9800; } }
+        
+        /* סגנון חדש לכפתור סטטוס הובלה */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+            gap: 5px;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        /* הגדרות סטטוסים ויזואליים */
+        .status-new { background-color: var(--info); }
+        .status-in-progress { background-color: var(--accent); }
+        .status-on-site { background-color: var(--success); }
+        .status-en-route { 
+            background-color: var(--danger); 
+            animation: overdue-pulse 1.5s infinite; 
+        }
+        .status-completed { background-color: var(--text-muted); opacity: 0.8; }
+        .status-overdue { background-color: var(--danger); }
+        
+        /* רכיב ה-ETA המשודרג */
+        .eta-card.active { 
+            border: 2px solid var(--danger);
+            animation: none; /* מסירים את ה-subtle-pulse מהכרטיס כולו */
+        }
+        .eta-card .status-en-route-btn {
+            background-color: var(--danger); 
+            animation: siren-blink 1s infinite alternate;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
         
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         html, body { height: 100%; overflow: hidden; background-color: var(--bg); }
@@ -151,14 +195,12 @@
         .history-row[data-action-type="הורדה"] { border-right-color: var(--success); }
         .history-row[data-action-type="פינוי"] { border-right-color: var(--danger); }
         
-        .eta-card { position: relative; overflow: hidden; padding: 15px; text-align: center;}
-        .eta-card.active { animation: subtle-pulse 2s infinite; }
         .eta-road { width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-top: 15px; position: relative; }
         .eta-progress { height: 100%; background: var(--brand); border-radius: 2px; position: absolute; right: 0; top: 0; transition: width 1s linear; }
         .eta-truck { font-size: 30px; position: absolute; top: -20px; transform: translateX(50%) scaleX(-1); transition: right 1s linear; }
         .eta-truck.static-truck { color: #ccc; }
         .siren { width: 8px; height: 8px; border-radius: 50%; position: absolute; top: -5px; left: 12px; animation: siren-blink 1s infinite; }
-        
+
         .header-btn {
             background: none;
             border: none;
@@ -214,6 +256,19 @@
              border-left: 4px solid var(--accent);
              background-color: #fff8f0; /* light orange tint */
         }
+
+        /* סגנון לכרטיס הזמנה פעילה בדף הבית */
+        .active-order-card {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-left: 5px solid;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .active-order-card[data-type="materials"] { border-left-color: var(--brand); }
+        .active-order-card[data-type="container"] { border-left-color: var(--accent); }
+        .active-order-card .order-title { font-weight: 700; font-size: 1rem; }
         
     </style>
 </head>
@@ -252,6 +307,7 @@
                     </button>
                 </div>
                 <div id="eta-card-container"></div>
+                <h2 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 15px;">הזמנות פעילות</h2>
                 <div id="active-orders-container"></div>
             </div>
             
@@ -408,11 +464,36 @@
                 // *** חשוב מאוד: החלף בכתובת ה-Apps Script המפורסמת שלך ***
                 const API_URL = "https://script.google.com/macros/s/AKfycbx07zliATi8KaNVWALPQugtzCsuJ1CojF_N8-6wUE3AKY18Lho66XZplGSf8v2xdaVf/exec";
                 
-                let clientState = { id: null, name: null, avatar: null, orders: [], addresses: new Set(), currentHistoryFilter: 'all', productCatalog: [], materialOrder: { items: [], step: 1 } };
+                let clientState = { 
+                    id: null, 
+                    name: null, 
+                    avatar: null, 
+                    orders: [], 
+                    materialOrders: [], /* חדש: לאחסון הזמנות חומרים */
+                    addresses: new Set(), 
+                    currentHistoryFilter: 'all', 
+                    productCatalog: [], 
+                    materialOrder: { items: [], step: 1 } 
+                };
                 let currentPageId = 'page-containers'; // ברירת מחדל: דף המכולות
                 let mapInstances = {};
                 const dom = {};
                 
+                // הגדרת הסטטוסים הויזואליים
+                const STATUS_MAP = {
+                    'חדש': { text: 'חדש', class: 'status-new', icon: '📝' },
+                    'בטיפול': { text: 'בטיפול', class: 'status-in-progress', icon: '🛠️' },
+                    'מוכן למשלוח': { text: 'מוכן למשלוח', class: 'status-in-progress', icon: '📦' },
+                    'בדרך': { text: 'בדרך', class: 'status-en-route', icon: '🚚' },
+                    'באתר': { text: 'באתר', class: 'status-on-site', icon: '📍' },
+                    'פעיל': { text: 'פעיל', class: 'status-on-site', icon: '👷' },
+                    'בחריגה': { text: 'בחריגה', class: 'status-overdue', icon: '🚨' },
+                    'סגור': { text: 'הושלם', class: 'status-completed', icon: '✅' },
+                    'בוטל': { text: 'בוטל', class: 'status-completed', icon: '❌' },
+                };
+                const getStatusInfo = (status) => STATUS_MAP[status] || { text: status, class: 'status-new', icon: '📝' };
+
+
                 // Hash map of field IDs to their help text
                 const fieldHints = {
                     'deliveryAddress': 'כתובת מלאה וברורה לאתר הפרויקט, כולל עיר, רחוב ומספר.',
@@ -488,13 +569,15 @@
                         const data = await apiPost({ action: 'getProductCatalog' });
 
                         if (data.status === 'success' && data.catalog) {
-                             // Renaming columns to match existing local structure for compatibility
+                            // שינוי קטן: מוסיפים שדה תמונה מדומה (mock image URL)
                             clientState.productCatalog = data.catalog.map(p => ({
                                 "שם מוצר": p["שם מוצר"],
                                 "מק\"ט": p["מק\"ט"],
                                 "יחידת מידה": p["unitOfMeasure"],
                                 "יח' במשטח": p["standardQuantityPerUnit"],
                                 "בסיס": p["baseUnit"],
+                                "מפרט טכני": p["technicalSpecification"] || "אין מפרט טכני זמין.",
+                                "תמונה": `https://placehold.co/100x100/0b72b9/ffffff?text=${p["מק\"ט"]}` // Mock Image
                             }));
                              console.log(`Product catalog loaded successfully (${clientState.productCatalog.length} items).`);
                         } else {
@@ -521,18 +604,27 @@
                         const clientName = data.user["שם לקוח"];
                         
                         // Mock Orders: Should be replaced by a dedicated API call to get all client orders
-                        const mockOrders = [
-                            { 'תעודה': 1234, 'פרוייקט': data.user?.["פרוייקט"] || 'העם הצרפתי', 'כתובת': data.user?.["כתובת"] || 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'פעיל', 'מכולה ירדה': 'כן', 'סוג פעולה': 'הורדה', 'שם נהג': 'יוסי', 'זמן הגעה משוער': '11:30', requests: [{ type: 'פינוי', date: '01/09' }] },
-                            { 'תעודה': 1236, 'פרוייקט': 'העם הצרפתי', 'כתובת': 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date().toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'בדרך', 'מכולה ירדה': '', 'סוג פעולה': 'הורדה', 'שם נהג': 'דוד', 'זמן הגעה משוער': '14:00', requests: [] },
+                        const mockContainerOrders = [
+                            { 'תעודה': 1234, 'סוג': 'container', 'פרוייקט': data.user?.["פרוייקט"] || 'העם הצרפתי', 'כתובת': data.user?.["כתובת"] || 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'פעיל', 'מכולה ירדה': 'כן', 'סוג פעולה': 'הורדה', 'שם נהג': 'יוסי', 'זמן הגעה משוער': '', requests: [{ type: 'פינוי', date: '01/09' }] },
+                            { 'תעודה': 1236, 'סוג': 'container', 'פרוייקט': 'העם הצרפתי', 'כתובת': 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date().toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'בדרך', 'מכולה ירדה': '', 'סוג פעולה': 'הורדה', 'שם נהג': 'דוד', 'זמן הגעה משוער': '14:00', requests: [] },
                         ];
+
+                        const mockMaterialOrders = [
+                            { 'תעודה': 9001, 'סוג': 'materials', 'פרוייקט': 'שפירא', 'כתובת': 'בן גוריון 10, תל אביב', 'תאריך הזמנה': new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), 'תאריך אספקה מבוקש': new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'בטיפול', 'שם נהג': '', 'זמן הגעה משוער': '', items: [{ name: 'בלוק איטונג', quantity: 200, unit: 'יח\'' }] },
+                            { 'תעודה': 9002, 'סוג': 'materials', 'פרוייקט': 'שפירא', 'כתובת': 'בן גוריון 10, תל אביב', 'תאריך הזמנה': new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), 'תאריך אספקה מבוקש': new Date(Date.now() + 0.5 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'מוכן למשלוח', 'שם נהג': 'משה', 'זמן הגעה משוער': '10:30', items: [{ name: 'מלט 50 ק"ג', quantity: 50, unit: 'שק' }] },
+                        ];
+                        
+                        // איחוד כל ההזמנות
+                        const allOrders = [...mockContainerOrders, ...mockMaterialOrders];
 
                         clientState = { 
                             ...clientState, 
                             id: data.user["מספר לקוח"], 
                             name: clientName, 
                             avatar: data.user["תמונת פרופיל"], 
-                            orders: mockOrders, 
-                            addresses: new Set(mockOrders.map(o => o['כתובת']).filter(Boolean)) 
+                            orders: mockContainerOrders, 
+                            materialOrders: mockMaterialOrders,
+                            addresses: new Set(allOrders.map(o => o['כתובת']).filter(Boolean)) 
                         };
                         localStorage.setItem('saban_client_id', clientState.id);
                         
@@ -704,66 +796,113 @@
                 }
                 
                 function renderHomePage() {
-                    const upcomingOrders = clientState.orders.filter(o => o['סטטוס'] !== 'סגור' && !o['מכולה ירדה']);
-                    const activeOnSite = clientState.orders.filter(o => o['סטטוס'] !== 'סגור' && o['מכולה ירדה']);
+                    const allActiveOrders = [
+                        ...clientState.orders.filter(o => o['סטטוס'] !== 'סגור' && o['סטטוס'] !== 'בוטל'),
+                        ...clientState.materialOrders.filter(o => o['סטטוס'] !== 'סגור' && o['סטטוס'] !== 'בוטל')
+                    ].sort((a, b) => new Date(b['תאריך הזמנה']) - new Date(a['תאריך הזמנה'])); // מיון מהחדש לישן
                     
-                    if (upcomingOrders.length > 0) {
-                        const order = upcomingOrders.find(o => o['זמן הגעה משוער']);
-                        dom.etaCardContainer.innerHTML = order ? createEtaCardHTML(order) : '<div class="card" style="text-align:center;"><p>אין צפי הגעה עדכני להזמנות בדרך.</p></div>';
-                    } else { 
-                        dom.etaCardContainer.innerHTML = ''; 
-                    }
+                    // 1. כרטיס ETA (מכולות וחומרים)
+                    const upcomingOrder = allActiveOrders.find(o => o['סטטוס'] === 'בדרך');
+                    dom.etaCardContainer.innerHTML = upcomingOrder ? createEtaCardHTML(upcomingOrder) : '<div class="card" style="text-align:center;"><p>אין צפי הגעה עדכני להזמנות בדרך.</p></div>';
                     
+                    // 2. רשימת הזמנות פעילות
                     const container = dom.activeOrdersContainer;
                     container.innerHTML = '';
-                    if (activeOnSite.length > 0) {
-                        if (document.getElementById('page-home').classList.contains('active')) {
-                             const cardElement = createContainerCardElement(activeOnSite[0]);
-                             container.appendChild(cardElement);
-                             renderLeafletMap(cardElement.querySelector('.mini-map-container'), activeOnSite[0]['כתובת']);
-                        }
-                    } else if (upcomingOrders.length === 0) {
+                    if (allActiveOrders.length > 0) {
+                        allActiveOrders.forEach(order => {
+                            container.appendChild(createActiveOrderCard(order));
+                        });
+                    } else {
                         container.innerHTML = '<div class="card" style="text-align:center;"><p>אין לך כרגע הזמנות פעילות.</p></div>';
                     }
                 }
 
+                function createActiveOrderCard(order) {
+                    const card = document.createElement('div');
+                    const statusInfo = getStatusInfo(order['סטטוס']);
+                    const title = order.סוג === 'container' ? `מכולה ${order.תעודה} (${order['סוג פעולה']})` : `הזמנת חומרים ${order.תעודה}`;
+                    const project = order['פרוייקט'] || 'פרויקט כללי';
+                    
+                    card.className = 'card active-order-card';
+                    card.dataset.type = order.סוג;
+                    card.dataset.action = 'show-history-details';
+                    card.dataset.orderId = order.תעודה;
+                    
+                    card.innerHTML = `
+                        <div>
+                            <p class="order-title">${title}</p>
+                            <p style="font-size: 0.8rem; color: var(--text-muted);">📍 ${project} | ${order.כתובת.split(',')[0]}</p>
+                        </div>
+                        <div class="status-badge ${statusInfo.class}">
+                            ${statusInfo.icon} ${statusInfo.text}
+                        </div>
+                    `;
+                    return card;
+                }
+
+
+                // *** הפונקציה המעודכנת ליצירת כרטיס ETA ***
                 function createEtaCardHTML(order) {
                     const eta = order['זמן הגעה משוער'];
                     const driverName = order['שם נהג'];
-                    let truckClass = 'static-truck';
+                    const statusInfo = getStatusInfo(order['סטטוס']);
+
+                    let title = statusInfo.text;
+                    let etaText = eta ? `צפי הגעה: **${eta}**` : 'מעקב זמין בקרוב...';
                     let progressStyle = 'width: 0%;';
                     let truckStyle = 'right: 0%;';
-                    let title = `${driverName ? `הנהג ${driverName} בדרך` : 'הזמנה בדרך'}`;
-                    let etaText = `צפי הגעה: ${eta || 'טרם עודכן'}`;
-
-                    if (eta) {
+                    
+                    let truckClass = 'static-truck';
+                    let isEnRoute = order['סטטוס'] === 'בדרך';
+                    
+                    if (isEnRoute && eta) {
                         const now = new Date();
                         const [hours, minutes] = eta.split(':').map(Number);
                         const etaDate = new Date(now);
                         etaDate.setHours(hours, minutes, 0, 0);
                         
+                        // קובעים חלון של שעתיים למעקב (או מתחילת היום)
                         const startDate = new Date(now);
-                        startDate.setHours(now.getHours() - 1, 0, 0, 0); 
-
+                        startDate.setHours(now.getHours() - 2, 0, 0, 0); 
+                        if (startDate > etaDate) startDate.setHours(8, 0, 0, 0); // מניעת התחלה לפני 8:00
+                        
                         const totalDuration = etaDate - startDate;
                         const elapsedDuration = now - startDate;
                         const progress = Math.min(100, Math.max(0, (elapsedDuration / totalDuration) * 100));
 
                         progressStyle = `width: ${progress}%;`;
                         truckStyle = `right: calc(${progress}% - 30px);`; 
-                        if(progress === 100) { title = 'הגיע ליעד! 📍'; truckStyle = 'right: 0%;'; }
-
+                        
+                        if(progress >= 100) { title = 'הגענו ליעד! 📍'; truckStyle = 'right: 0%;'; isEnRoute = false; }
+                        
                         truckClass = '';
                     }
 
                     return `
-                        <div class="card eta-card ${eta ? 'active' : ''}">
-                            <div style="color: var(--brand); font-weight: 700;">${title}</div>
-                            <div>${etaText}</div>
+                        <div class="card eta-card ${isEnRoute ? 'active' : ''}" style="border-color: ${isEnRoute ? 'var(--danger)' : 'var(--border)'};">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="color: var(--text-dark); font-weight: 700;">
+                                    ${order.סוג === 'container' ? '📦 מכולה' : '🧱 חומרים'} | ${order['פרוייקט'] || 'פרויקט'}
+                                </div>
+                                ${isEnRoute ? 
+                                    `<button class="status-en-route-btn">
+                                        🚚 בדרך!
+                                    </button>` 
+                                    : 
+                                    `<span class="status-badge ${statusInfo.class}">
+                                        ${statusInfo.icon} ${statusInfo.text}
+                                    </span>`
+                                }
+                            </div>
+                            <div style="text-align: center; margin-top: 10px; font-weight: 600;">
+                                ${driverName ? `הנהג ${driverName}` : 'צוות ההובלה'}
+                                <p style="font-size: 1.1rem; margin: 5px 0 0 0;">${etaText}</p>
+                            </div>
+                            
                             <div class="eta-road">
                                 <div class="eta-progress" style="${progressStyle}"></div>
                                 <div class="eta-truck ${truckClass}" style="${truckStyle}">
-                                    ${eta ? '<div class="siren"></div>' : ''}
+                                    ${isEnRoute ? '<div class="siren"></div>' : ''}
                                     🚛
                                 </div>
                             </div>
@@ -773,19 +912,12 @@
 
                 // דף המכולות (כעת הראשי)
                 function renderContainersPage() {
-                    const activeOnSite = clientState.orders.filter(o => o['סטטוס'] !== 'סגור' && o['מכולה ירדה']);
-                    const upcomingOrders = clientState.orders.filter(o => o['סטטוס'] !== 'סגור' && !o['מכולה ירדה']);
+                    const activeOnSite = clientState.orders.filter(o => o['סטטוס'] === 'פעיל' && o['מכולה ירדה'] === 'כן');
                     
                     const container = dom.containersList;
                     container.innerHTML = '';
                     
-                    // 1. צפי הגעה בראש הדף
-                    if (upcomingOrders.length > 0) {
-                        const order = upcomingOrders.find(o => o['זמן הגעה משוער']);
-                        if(order) container.appendChild(htmlToElement(createEtaCardHTML(order)));
-                    }
-
-                    // 2. רשימת מכולות פעילות
+                    // 1. רשימת מכולות פעילות
                     if (activeOnSite.length === 0) { 
                         container.innerHTML += '<div class="card" style="text-align:center;"><p>אין לך מכולות פעילות כרגע.</p><button class="btn secondary" data-action="navigate" data-page="page-materials" style="margin-top: 10px;">הזמן חומרים חדשים</button></div>'; 
                         return; 
@@ -808,10 +940,12 @@
 
                 function renderHistoryPage(filter = clientState.currentHistoryFilter) {
                     clientState.currentHistoryFilter = filter;
-                    const projects = ['all', ...new Set(clientState.orders.map(o => o['פרוייקט']).filter(Boolean))];
+                    const allOrders = [...clientState.orders, ...clientState.materialOrders];
+                    
+                    const projects = ['all', ...new Set(allOrders.map(o => o['פרוייקט']).filter(Boolean))];
                     const filtersHTML = projects.map(p => `<button class="filter-btn ${filter === p ? 'active' : ''}" data-action="filter-history" data-project="${p}">${p === 'all' ? 'הכל' : p}</button>`).join('');
                     
-                    const filteredOrders = clientState.orders
+                    const filteredOrders = allOrders
                         .filter(o => filter === 'all' || o['פרוייקט'] === filter)
                         .sort((a, b) => new Date(b['תאריך הזמנה']) - new Date(a['תאריך הזמנה'])); // מיון לפי תאריך יורד
 
@@ -819,15 +953,19 @@
                         <div id="history-filters">${filtersHTML}</div>
                         <div style="overflow-x: auto;">
                             <table class="history-table">
-                                <thead><tr><th>פרויקט</th><th>תעודה</th><th>תאריך</th><th>פעולה</th></tr></thead>
+                                <thead><tr><th>סוג</th><th>פרויקט</th><th>תעודה</th><th>תאריך</th><th>סטטוס</th></tr></thead>
                                 <tbody>
-                                    ${filteredOrders.map(order => `
-                                        <tr class="history-row" data-action="show-history-details" data-order-id="${order['תעודה']}" data-action-type="${order['סוג פעולה']}">
+                                    ${filteredOrders.map(order => {
+                                        const statusInfo = getStatusInfo(order['סטטוס']);
+                                        const orderType = order.סוג === 'container' ? '📦' : '🧱';
+                                        return `
+                                        <tr class="history-row" data-action="show-history-details" data-order-id="${order['תעודה']}" data-order-type="${order.סוג}" data-action-type="${order['סוג פעולה'] || order.סוג}">
+                                            <td>${orderType}</td>
                                             <td>${order['פרוייקט'] || '-'}</td>
                                             <td>${order['תעודה'] || ''}</td>
                                             <td>${new Date(order['תאריך הזמנה'])?.toLocaleDateString('he-IL') || ''}</td>
-                                            <td>${order['סוג פעולה'] || ''}</td>
-                                        </tr>`).join('')}
+                                            <td><span class="status-badge ${statusInfo.class}">${statusInfo.icon} ${statusInfo.text}</span></td>
+                                        </tr>`}).join('')}
                                 </tbody>
                             </table>
                         </div>`;
@@ -852,11 +990,17 @@
                     
                     const historyHTML = (order.requests || []).map(req => `<div class="request-history-item"><span>בקשת ${req.type}</span><span style="color: var(--text-muted);">${req.date}</span></div>`).join('');
 
+                    const statusInfo = getStatusInfo(isOverdue ? 'בחריגה' : order['סטטוס']);
+
                     card.innerHTML = `
-                        ${isOverdue ? '<div class="overdue-badge">בחריגה</div>' : ''}
+                        ${isOverdue ? '<div class="overdue-badge">🚨 בחריגה</div>' : ''}
                         <div style="display:flex; justify-content: space-between; align-items: flex-start;">
-                            <div><h3 style="font-size: 1.1rem; margin-bottom: 4px;">${order['פרוייקט'] || `מכולה ${order['תעודה']}`}</h3><p style="color: var(--text-light); font-size: 0.9rem;">${order['כתובת']}</p></div>
+                            <div>
+                                <h3 style="font-size: 1.1rem; margin-bottom: 4px;">${order['פרוייקט'] || `מכולה ${order['תעודה']}`}</h3>
+                                <p style="color: var(--text-light); font-size: 0.9rem;">${order['כתובת']}</p>
+                            </div>
                             <div style="text-align: center; flex-shrink: 0; margin-right: 15px;">
+                                <div class="status-badge ${statusInfo.class}" style="margin-bottom: 5px;">${statusInfo.icon} ${statusInfo.text}</div>
                                 <div style="font-weight: bold; font-size: 1.2rem;">${isOverdue ? '!' : remainingDays}</div>
                                 <div style="font-size: 0.7rem; color: var(--text-muted);">${isOverdue ? 'בחריגה' : 'ימים נותרו'}</div>
                             </div>
@@ -869,6 +1013,31 @@
                             <button class="btn" data-action="request-pickup" data-order-id="${order['תעודה']}">פינוי</button>
                         </div>`;
                     return card;
+                }
+
+                // *** פופאפ מפרט טכני ***
+                function showProductDetailsModal(product) {
+                    const htmlContent = `
+                        <div class="modal-content">
+                            <h3 style="margin-bottom: 15px; border-bottom: 2px solid var(--brand); padding-bottom: 10px;">${product["שם מוצר"]}</h3>
+                            <div style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 20px;">
+                                <img src="${product.תמונה}" alt="${product["שם מוצר"]}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; flex-shrink: 0; box-shadow: var(--shadow);">
+                                <div>
+                                    <p style="font-size: 14px;"><strong>מק"ט:</strong> ${product["מק\"ט"] || 'אין'}</p>
+                                    <p style="font-size: 14px;"><strong>יח' מידה:</strong> ${product["יחידת מידה"] || 'יח\''}</p>
+                                    <p style="font-size: 14px;"><strong>יח' במשטח:</strong> ${product["יח' במשטח"] || '-'}</p>
+                                </div>
+                            </div>
+                            <h4 style="font-size: 1.1rem; margin-bottom: 10px;">מפרט טכני:</h4>
+                            <p style="font-size: 14px; color: var(--text-dark); white-space: pre-wrap;">${product["מפרט טכני"]}</p>
+                            <div style="margin-top:25px; text-align: center;">
+                                <button type="button" class="btn secondary" data-action="close-modal">סגור</button>
+                            </div>
+                        </div>
+                    `;
+                    dom.modalContainer.innerHTML = htmlContent;
+                    dom.modalContainer.classList.add('show');
+                    dom.modalContainer.querySelector('[data-action="close-modal"]').onclick = () => dom.modalContainer.classList.remove('show');
                 }
                 
                 async function sendClientRequest(requestType, details) {
@@ -1005,9 +1174,10 @@
                     }
 
                     // Filter using the dynamically loaded catalog
+                    // ודא שהבדיקה היא רק על מחרוזות כדי להימנע משגיאות
                     const suggestions = clientState.productCatalog.filter(p => 
-                        (p["שם מוצר"]?.toLowerCase().includes(query)) || 
-                        (p["מק\"ט"]?.toString().toLowerCase().includes(query))
+                        (p["שם מוצר"] && p["שם מוצר"].toLowerCase().includes(query)) || 
+                        (p["מק\"ט"] && p["מק\"ט"].toString().toLowerCase().includes(query))
                     ).slice(0, 5); // הצג עד 5 תוצאות
 
                     renderSuggestions(suggestions);
@@ -1054,7 +1224,16 @@
                              addedCount++;
                          } else {
                              // מוצר בטקסט חופשי (לא זוהה)
-                             addProductToOrder({ "שם מוצר": name || 'פריט לא מזוהה', "מק\"ט": "N/A", "יחידת מידה": "יח'", isUnidentified: true, "יח' במשטח": 1, "בסיס": "יח'" }, quantity);
+                             addProductToOrder({ 
+                                 "שם מוצר": name || 'פריט לא מזוהה', 
+                                 "מק\"ט": "N/A", 
+                                 "יחידת מידה": "יח'", 
+                                 isUnidentified: true, 
+                                 "יח' במשטח": 1, 
+                                 "בסיס": "יח'", 
+                                 "מפרט טכני": "פריט זה הוזן כטקסט חופשי. יש לוודא פרטים מול הספק.",
+                                 "תמונה": "https://placehold.co/100x100/718096/ffffff?text=?"
+                            }, quantity);
                              addedCount++;
                          }
                      });
@@ -1069,12 +1248,15 @@
                         return;
                     }
                     dom.productSuggestions.innerHTML = suggestions.map(p => `
-                        <div class="p-3 hover:bg-gray-100 cursor-pointer flex justify-between items-center" data-sku="${p["מק\"ט"]}" data-action="add-product">
-                            <div>
+                        <div class="p-3 hover:bg-gray-100 cursor-pointer flex justify-between items-center" data-sku="${p["מק\"ט"]}">
+                            <div data-action="add-product" data-sku="${p["מק\"ט"]}" style="flex-grow:1; cursor:pointer;">
                                 <p class="font-semibold">${p["שם מוצר"]}</p>
                                 <p class="text-sm text-text-muted">מק"ט: ${p["מק\"ט"] || 'אין'} | יח' מידה: ${p["יחידת מידה"]}</p>
                             </div>
-                             <button class="btn p-1 text-sm rounded-full" data-action="add-product" data-sku="${p["מק\"ט"]}">+ הוסף</button>
+                            <button class="text-brand hover:text-dark p-2" data-action="view-product-details" data-sku="${p["מק\"ט"]}" title="צפה במפרט">
+                                👁️
+                            </button>
+                             <button class="btn p-1 text-sm rounded-full mr-2" data-action="add-product" data-sku="${p["מק\"ט"]}">+ הוסף</button>
                         </div>
                     `).join('');
                 }
@@ -1086,7 +1268,9 @@
                     if(existingItem && !product.isUnidentified) {
                         existingItem.quantity += quantity;
                     } else {
-                         clientState.materialOrder.items.push({ ...product, quantity });
+                         // מצא מוצר מלא מהקטלוג אם הוספנו דרך הצעות
+                         const productToAdd = product.isUnidentified ? product : clientState.productCatalog.find(p => p["מק\"ט"] === sku) || product;
+                         clientState.materialOrder.items.push({ ...productToAdd, quantity });
                     }
                     renderOrderItems();
                 }
@@ -1110,7 +1294,10 @@
                                 <p class="font-bold">${item["שם מוצר"]} ${isUnidentified ? '<span class="text-yellow-600 font-sans text-lg" title="פריט בטקסט חופשי, אנא וודא את הפרטים">⚠️</span>' : ''}</p>
                                 <p class="text-sm text-text-muted">מק"ט: ${item["מק\"ט"] || 'לא זוהה'}</p>
                             </div>
-                            <div class="text-center">
+                            <div class="text-center flex items-center gap-2">
+                                <button class="text-brand hover:text-dark p-2" data-action="view-product-details" data-sku="${item["מק\"ט"]}" data-index="${index}" title="צפה במפרט">
+                                    👁️
+                                </button>
                                  <input type="number" value="${item.quantity}" min="0.1" step="any" class="form-input w-20 text-center p-1 text-base" data-index="${index}" data-action="update-quantity" onchange="window.updateItemQuantity(event)">
                                  <p class="text-xs text-text-muted mt-1">${item["יחידת מידה"] || 'יח\''}</p>
                             </div>
@@ -1189,7 +1376,8 @@
                         transportType: form.transportType.value,
                         notes: form.deliveryNotes.value,
                         items: clientState.materialOrder.items, // רשימת מוצרים מפורטת
-                        isUrgent: false 
+                        isUrgent: false,
+                        status: 'חדש'
                     };
 
                     button.disabled = true;
@@ -1211,7 +1399,10 @@
                             form.reset();
                             clientState.materialOrder.items = [];
                             clientState.materialOrder.step = 1;
-                            navigateTo('page-history');
+                            // ננווט לדף הבית כדי לראות את ההזמנה החדשה כהזמנה פעילה
+                            loadClientData(clientState.id, true);
+                            navigateTo('page-home'); 
+
                         } else {
                             throw new Error(response.message || 'שגיאה כללית בשליחת ההזמנה');
                         }
@@ -1285,7 +1476,24 @@
 
                 function openHistoryDetailModal(order) {
                     if (!order) return;
-                    dom.modalContainer.innerHTML = `<div class="modal-content" style="padding:0;"><div style="padding: 20px 20px 0 20px;"><h3 style="margin-bottom: 10px;">פרטי הזמנה ${order['תעודה']}</h3><p><strong>פרויקט:</strong> ${order['פרוייקט'] || '-'}</p><p><strong>כתובת:</strong> ${order['כתובת']}</p><p><strong>תאריך:</strong> ${new Date(order['תאריך הזמנה'])?.toLocaleDateString('he-IL')}</p><p><strong>פעולה:</strong> ${order['סוג פעולה']}</p></div><div id="history-map" style="height: 200px; width: 100%; margin-top: 15px; border-bottom-left-radius: var(--radius); border-bottom-right-radius: var(--radius);"></div></div>`;
+                    
+                    const isContainer = order.סוג === 'container';
+                    const mainDetails = `
+                        <p><strong>סוג:</strong> ${isContainer ? 'מכולה' : 'חומרי בניין'}</p>
+                        <p><strong>פרויקט:</strong> ${order['פרוייקט'] || '-'}</p>
+                        <p><strong>כתובת:</strong> ${order['כתובת']}</p>
+                        <p><strong>תאריך:</strong> ${new Date(order['תאריך הזמנה'])?.toLocaleDateString('he-IL')}</p>
+                        <p><strong>סטטוס:</strong> <span class="status-badge ${getStatusInfo(order['סטטוס']).class}">${getStatusInfo(order['סטטוס']).icon} ${getStatusInfo(order['סטטוס']).text}</span></p>
+                    `;
+                    
+                    let itemsHtml = '';
+                    if (order.סוג === 'materials' && order.items && order.items.length) {
+                        itemsHtml = `<h4 style="font-size: 1.1rem; margin-top: 15px; border-top: 1px solid var(--border); padding-top: 10px;">פריטים שהוזמנו:</h4>` + order.items.map(item => 
+                            `<p style="font-size: 14px;">- ${item.name || item["שם מוצר"]}: ${item.quantity} ${item.unit || item["יחידת מידה"]}</p>`
+                        ).join('');
+                    }
+
+                    dom.modalContainer.innerHTML = `<div class="modal-content" style="padding:0;"><div style="padding: 20px 20px 0 20px;"><h3 style="margin-bottom: 10px;">פרטי הזמנה ${order['תעודה']}</h3>${mainDetails}${itemsHtml}</div><div id="history-map" style="height: 200px; width: 100%; margin-top: 15px; border-bottom-left-radius: var(--radius); border-bottom-right-radius: var(--radius);"></div></div>`;
                     dom.modalContainer.classList.add('show');
                     renderLeafletMap(document.getElementById('history-map'), order['כתובת']);
                     dom.modalContainer.onclick = (e) => { if(e.target === dom.modalContainer) dom.modalContainer.classList.remove('show'); };
@@ -1392,7 +1600,9 @@
                                 renderHistoryPage(actionElement.dataset.project); 
                                 break;
                             case 'show-history-details':
-                                const order = clientState.orders.find(o => o['תעודה'] == actionElement.dataset.orderId);
+                                const orderId = actionElement.dataset.orderId;
+                                const orderType = actionElement.dataset.orderType;
+                                const order = (orderType === 'container' ? clientState.orders : clientState.materialOrders).find(o => o['תעודה'] == orderId);
                                 openHistoryDetailModal(order);
                                 break;
                             case 'request-swap': case 'request-pickup': {
@@ -1415,6 +1625,15 @@
                             case 'remove-item': {
                                 const index = parseInt(actionElement.dataset.index);
                                 removeItemFromOrder(index);
+                                break;
+                            }
+                            case 'view-product-details': {
+                                const sku = actionElement.dataset.sku;
+                                // אם המוצר נמצא בהזמנה (לפי אינדקס) או בקטלוג
+                                const product = clientState.productCatalog.find(p => p["מק\"ט"] == sku) || clientState.materialOrder.items[actionElement.dataset.index];
+                                if (product) {
+                                    showProductDetailsModal(product);
+                                }
                                 break;
                             }
                         }
