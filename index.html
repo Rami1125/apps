@@ -19,7 +19,7 @@
         async function setOneSignalExternalId(clientId) {
             if (!clientId || !window.OneSignalDeferred) return;
             
-            // דוחף את הפעולה לתור של OneSignal
+            // דוחף את הפעולה לתור של OneSignal - תיקון: הפונקציה דוחפת את עצמה לתור!
             window.OneSignalDeferred.push(async function(OneSignal) {
                 try {
                     // 1. שיוך מזהה הלקוח למכשיר
@@ -39,7 +39,7 @@
                     }
 
                 } catch(e) {
-                    console.error("OneSignal setup failed:", e);
+                    console.error("OneSignal setup failed (External ID):", e);
                 }
             });
         }
@@ -65,6 +65,7 @@
                 // קריאה ראשונית לשיוך אם יש Client ID שמור
                 const clientId = localStorage.getItem('saban_client_id');
                 if (clientId) {
+                     // **תיקון תזמון**: קוראים לפונקציה שדוחפת את עצמה לתור שוב, כדי לוודא ששיוך ה-ID קורה רק אחרי אתחול.
                     setOneSignalExternalId(clientId);
                 }
             } catch (error) {
