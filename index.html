@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>אזור אישי - ח.סבן (עם התראות)</title>
+    <title>אזור אישי - ח.סבן</title>
     <meta name="theme-color" content="#ffffff"/>
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
@@ -368,9 +368,8 @@
         // Using a try-catch block for the entire script to prevent app freeze on critical errors
         try {
             document.addEventListener('DOMContentLoaded', () => {
-                // *** IMPORTANT: Replace with your actual deployed Apps Script URL ***
-                // ודא שכתובת ה-Apps Script שלך עדכנית כאן!
-                const API_URL = "https://script.google.com/macros/s/AKfycbx07zliATi8KaNVWALPQugtzCsuJ1CojF_N8-6wUE3AKY18Lho66XZplGSf8v2xdaVf/exec";
+                // *** חשוב מאוד: החלף בכתובת ה-Apps Script המפורסמת שלך ***
+                const API_URL = "https://script.google.com/macros/s/AKfycbz5zkASUR1Ye1ZzYvPDvq4VhZegvZHzG5vdczLEaahcw_NDO2D9vb_4sGVYFrjrHzc/exec";
                 
                 let clientState = { id: null, name: null, avatar: null, orders: [], addresses: new Set(), currentHistoryFilter: 'all', productCatalog: [], materialOrder: { items: [], step: 1 } };
                 let currentPageId = 'page-containers'; // ברירת מחדל: דף המכולות
@@ -435,7 +434,7 @@
                 // **UPDATED: Loads product catalog from API endpoint**
                 async function loadProductCatalog() {
                     try {
-                        const url = `${API_URL}?sheet=קטלוג מוצרים`;
+                        const url = `${API_URL}?sheet=ProductCatalog`; // משתמש במפתח ProductCatalog כפי שהוגדר ב-Apps Script
                         const response = await fetch(url, { method: 'GET', mode: 'cors' });
                         
                         if (!response.ok) {
@@ -456,11 +455,10 @@
                              console.log(`Product catalog loaded successfully (${clientState.productCatalog.length} items).`);
                         } else {
                             console.warn("API did not return a successful catalog. Using mock or empty catalog.", data.message);
-                            clientState.productCatalog = []; // Ensure it's an array even if call fails
+                            clientState.productCatalog = []; 
                         }
                     } catch (error) {
                         console.error("Error fetching product catalog:", error);
-                        // Using empty catalog if API fails
                         clientState.productCatalog = [];
                         showToast("שגיאה בטעינת קטלוג המוצרים. חפש לפי טקסט חופשי.", '⚠️');
                     }
@@ -468,7 +466,7 @@
 
                 async function loadClientData(clientId, isRefresh = false) {
                     try {
-                        // **ACTION: Login/Load Client Data**
+                        // **ACTION: Login/Load Client Data** - שולח identifier
                         const data = await apiPost({ action: 'login', identifier: clientId });
 
                         if (data.status === 'error' || !data.user || !data.user["שם לקוח"]) {
@@ -515,7 +513,6 @@
                         dom.splashScreen.style.display = 'none';
                         promptForClientId();
                         showToast(`שגיאה בטעינת נתונים: ${error.message}. נסה שוב.`, '❌');
-                        // No need to re-throw, promptForClientId handles the failure path
                     }
                 }
                 
@@ -1328,70 +1325,7 @@
     })();
     </script>
 
-    <!-- Firebase + FCM integration (module) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
-
-        // Configuration details for Firebase FCM
-        const firebaseConfig = {
-            apiKey: "AIzaSyDy3k1AoEKeuCKjmFxefn9fapeqv2Le1_w",
-            authDomain: "hsaban94-cc777.firebaseapp.com",
-            databaseURL: "https://hsaban94-cc777.firebaseio.com",
-            projectId: "hsaban94-cc777",
-            storageBucket: "hsaban94-cc777.appspot.com",
-            messagingSenderId: "299206369469",
-            appId: "1:299206369469:web:50ca90c58f1981ec9457d4",
-            measurementId: "G-EJVHY5TTV8"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const messaging = getMessaging(app);
-
-        async function requestAndRegisterToken() {
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission !== 'granted') return null;
-
-                const VAPID_KEY = "BAlb2vE3n14fE2f-g1-9gAAbcdeFGHIjklmnoPQRSTuvwxyz0123456789_-AbCdEfGh";
-
-                const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
-                if (currentToken) {
-                    console.log('Got FCM token:', currentToken);
-                } else {
-                    console.log('No registration token available.');
-                }
-                return currentToken;
-            } catch (err) {
-                console.error('An error occurred while retrieving token. ', err);
-                return null;
-            }
-        }
-
-        onMessage(messaging, (payload) => {
-            console.log('Message received. ', payload);
-            const showToastInApp = window.showToast || ((msg, icon) => alert(`${icon} ${msg}`));
-            showToastInApp(`${payload.notification?.title || ''}: ${payload.notification?.body || ''}`, '🔔');
-        });
-
-        (async () => {
-            const token = await requestAndRegisterToken();
-            if (token) {
-              console.log("FCM Token is ready to be saved to the server:", token);
-            }
-        })();
-    </script>
-
-    <!-- רישום ה־service worker של FCM -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            // **FIX 1:** Changed the Service Worker registration script URL from a relative path to the expected filename.
-            // The FCM registration script should usually reside in the root path to have full scope, 
-            // and the path provided in the previous files was "./firebase-messaging-sw.js"
-            navigator.serviceWorker.register('./firebase-messaging-sw.js')
-                .then(reg => console.log('FCM Service Worker registered:', reg.scope))
-                .catch(err => console.error('FCM SW registration failed:', err));
-        }
-    </script>
+    <!-- הוסרו לחלוטין כל קטעי הקוד הקשורים ל-Firebase, FCM ו-Service Workers. -->
+    <!-- התקשורת מתבצעת כעת רק דרך API_URL. -->
 </body>
 </html>
