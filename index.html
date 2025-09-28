@@ -810,17 +810,23 @@
         }
         
         function updateFormView() {
-            dom.formSteps.forEach((step, i) => step.classList.toggle('hidden', i + 1 !== currentStep));
-            dom.stepIndicators.forEach((ind, i) => {
-                ind.classList.toggle('step-active', i + 1 === currentStep);
-                ind.classList.toggle('text-text-muted', i + 1 !== currentStep);
-            });
+            // Check if DOM elements are available before accessing properties
+            if (dom.formSteps && dom.stepIndicators) {
+                dom.formSteps.forEach((step, i) => step.classList.toggle('hidden', i + 1 !== currentStep));
+                dom.stepIndicators.forEach((ind, i) => {
+                    ind.classList.toggle('step-active', i + 1 === currentStep);
+                    ind.classList.toggle('text-text-muted', i + 1 !== currentStep);
+                });
 
-            dom.formBackBtn.classList.toggle('invisible', currentStep === 1);
-            dom.formNextBtn.textContent = currentStep === 3 ? "שלח הזמנה לווצאפ" : "הבא";
+                dom.formBackBtn.classList.toggle('invisible', currentStep === 1);
+                dom.formNextBtn.textContent = currentStep === 3 ? "שלח הזמנה לווצאפ" : "הבא";
 
-            if (currentStep === 3) {
-                renderOrderSummary();
+                if (currentStep === 3) {
+                    renderOrderSummary();
+                }
+            } else {
+                 // Fallback if called before cacheDomElements finished (unlikely with init flow)
+                 console.warn("updateFormView called before DOM cache complete.");
             }
         }
         
@@ -1032,7 +1038,8 @@
             dom.body.addEventListener('click', (e) => {
                 const actionElement = e.target.closest('[data-action]');
                 if (!actionElement) {
-                    if(!e.target.closest('#profile-container')) dom.profileContainer.classList.remove('active');
+                    // תיקון: ודא ש-dom.profileContainer קיים לפני הגישה ל-classList
+                    if(dom.profileContainer && !e.target.closest('#profile-container')) dom.profileContainer.classList.remove('active');
                     if(e.target.classList.contains('modal-overlay')) closeModal();
                     return;
                 };
