@@ -65,6 +65,7 @@
                         console.error("❌ External ID אינו תואם! יש שגיאה בהתחברות.");
                     }
                     console.groupEnd();
+                    return status; // החזרת הסטטוס לשימוש פנימי
                 });
             } else {
                 console.error("OneSignal SDK עדיין לא נטען.");
@@ -755,6 +756,9 @@
                             window.OneSignalDeferred.push(function(OneSignal) {
                                 OneSignal.setExternalUserId(clientState.id);
                                 console.log(`OneSignal (Login): External User ID set to client ID: ${clientState.id}`);
+                                
+                                // TOAST לאישור חיבור OneSignal
+                                showToast(`✅ Push Notifications מחובר ללקוח ${clientState.id}`, '🔔');
                             });
                         }
                         
