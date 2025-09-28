@@ -461,6 +461,7 @@
                             }));
                              console.log(`Product catalog loaded successfully (${clientState.productCatalog.length} items).`);
                         } else {
+                            // השגיאה נתפסת כאן ומציגה את ההודעה מהשרת
                             console.warn("API did not return a successful catalog. Using mock or empty catalog.", data.message);
                             clientState.productCatalog = []; 
                         }
@@ -1414,3 +1415,4 @@
     <!-- התקשורת מתבצעת כעת רק דרך API_URL. -->
 </body>
 </html>
+
