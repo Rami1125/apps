@@ -427,12 +427,18 @@
         
         function initApp() {
             console.log("[INIT] 0. Starting application init.");
+            
+            // AVOID ALL DOM MANIPULATION BEFORE CACHE
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            // FIX: Check for both 'clientId' (correct) and 'Clientid' (common typo)
+            const clientIdFromUrl = urlParams.get('clientId') || urlParams.get('Clientid');
+            const storedClientId = clientIdFromUrl || localStorage.getItem('saban_client_id');
+            
+            // Cache DOM elements now
             cacheDomElements();
             updateClock();
             setInterval(updateClock, 1000);
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            const storedClientId = urlParams.get('clientId') || localStorage.getItem('saban_client_id');
             
             // Check if there is a client ID stored locally or in URL
             if (storedClientId) {
@@ -443,8 +449,12 @@
                  loadClientData(storedClientId);
             } else {
                  console.log("[INIT] No Client ID found. Prompting for login.");
-                 dom.splashScreen.style.display = 'none';
-                 promptForClientId();
+                 
+                 // FIX: Ensure promptForClientId is called only after DOM is ready
+                 setTimeout(() => {
+                    dom.splashScreen.style.display = 'none';
+                    promptForClientId();
+                 }, 100);
             }
         }
 
