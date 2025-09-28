@@ -22,18 +22,17 @@
                 notifyButton: {
                     enable: true,
                 },
-                // רישום ה-Service Worker: חשוב לוודא שקובץ OneSignalSDKWorker.js נמצא בתיקיית הבסיס של האתר
+                // *** תיקון 1: הסרנו את הנתיב הקשיח כדי למנוע 404 ***
                 serviceWorkerParam: {
                     scope: '/',
-                    path: 'OneSignalSDKWorker.js' // שם הקובץ שהעלית
+                    // path: 'OneSignalSDKWorker.js' // הוסר
                 },
             });
 
             // *** חלק חשוב: איך להתחבר ללקוח ספציפי (Targeting) ***
-            // אם המשתמש כבר מחובר ב-localStorage בעת טעינת הדף, נשייך אותו מיד.
+            // נשארת כאן קריאה מותנית לטובת לקוחות שמחוברים כבר בטעינה הראשונית.
             const clientId = localStorage.getItem('saban_client_id');
             if (clientId) {
-                // קריאה זו תרוץ רק לאחר שה-SDK מוכן
                 OneSignal.setExternalUserId(clientId);
                 console.log(`OneSignal (Init): External User ID set to client ID: ${clientId}`);
             }
@@ -573,7 +572,7 @@
             document.addEventListener('DOMContentLoaded', () => {
                 // *** חשוב מאוד: החלף בכתובת ה-Apps Script המפורסמת שלך ***
                 const API_URL = "https://script.google.com/macros/s/AKfycbx07zliATi8KaNVWALPQugtzCsuJ1CojF_N8-6wUE3AKY18Lho66XZplGSf8v2xdaVf/exec";
-                const WHATSAPP_NUMBER = '972508860896'; // החלף במספר הווטסאפ של מחלקת ההזמנות
+                const WHATSAPP_NUMBER = '9725XXXXXXXX'; // החלף במספר הווטסאפ של מחלקת ההזמנות
                 
                 let clientState = { 
                     id: null, 
@@ -701,13 +700,16 @@
                             }));
                              console.log(`Product catalog loaded successfully (${clientState.productCatalog.length} items).`);
                         } else {
-                            console.warn("API did not return a successful catalog. Using mock or empty catalog.", data.message);
+                            // תיקון 3: טיפול בשגיאה
+                            console.warn("API did not return a successful catalog. Message:", data.message || "Unknown API Error");
                             clientState.productCatalog = []; 
                         }
+                        
                     } catch (error) {
+                        // תיקון 3: טיפול בשגיאה
                         console.error("Error fetching product catalog:", error);
                         clientState.productCatalog = [];
-                        showToast("שגיאה בטעינת קטלוג המוצרים. חפש לפי טקסט חופשי.", '⚠️');
+                        showToast(`שגיאה בטעינת קטלוג: ${error.message || 'כשל תקשורת'}`, '⚠️');
                     }
                 }
 
@@ -750,10 +752,10 @@
                         };
                         localStorage.setItem('saban_client_id', clientState.id);
                         
-                        // *** OneSignal FIX: נוודא ש-OneSignal קיים לפני הקריאה לפונקציה, 
-                        // ומשתמשים ב-OneSignalDeferred.push אם אנחנו לא יכולים להבטיח את טעינתו ***
+                        // *** תיקון 2: העברנו את setExternalUserId לתוך OneSignalDeferred בתוך loadClientData ***
                         if (window.OneSignalDeferred) {
                             window.OneSignalDeferred.push(function(OneSignal) {
+                                // OneSignal.setExternalUserId נתון ומוכח כי הוא זמין כאן
                                 OneSignal.setExternalUserId(clientState.id);
                                 console.log(`OneSignal (Login): External User ID set to client ID: ${clientState.id}`);
                                 
