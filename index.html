@@ -9,6 +9,50 @@
     <link rel="apple-touch-icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
     <link rel="icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
 
+    <!-- OneSignal SDK for Push Notifications -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(async function(OneSignal) {
+            await OneSignal.init({
+                appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
+                // ההגדרה הבאה הכרחית עבור משתמשי Safari
+                safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
+                // כפתור ההרשמה הסטנדרטי של OneSignal
+                notifyButton: {
+                    enable: true,
+                },
+                // רישום ה-Service Worker: חשוב לוודא שקובץ OneSignalSDKWorker.js נמצא בתיקיית הבסיס של האתר
+                serviceWorkerParam: {
+                    scope: '/',
+                    path: 'OneSignalSDKWorker.js' // שם הקובץ שהעלית
+                },
+            });
+
+            // *** חלק חשוב: איך להתחבר ללקוח ספציפי (Targeting) ***
+            // ברגע שמשתמש מתחבר, נרצה לשייך את המזהה שלו ב-OneSignal למספר הלקוח (Client ID) שלנו.
+            // כך נוכל לשלוח התראות רק אליו.
+            
+            // נניח ש-loadClientData() מטעין את clientState.id (מספר לקוח).
+            // ניתן לקרוא לפונקציה הזו אחרי שה-SDK סיים אתחול:
+            
+            if (localStorage.getItem('saban_client_id')) {
+                // המשתמש מחובר - נשייך אותו ב-OneSignal באמצעות setExternalUserId
+                const clientId = localStorage.getItem('saban_client_id');
+                if (clientId) {
+                    OneSignal.setExternalUserId(clientId);
+                    console.log(`OneSignal: External User ID set to client ID: ${clientId}`);
+                }
+            }
+
+            // ניתן גם להוסיף Event Listener לכפתור ההרשמה של OneSignal
+            OneSignal.on('subscriptionChange', function (isSubscribed) {
+                console.log("OneSignal subscription status changed: " + isSubscribed);
+                // אם אתה משתמש ב-setExternalUserId, כדאי לוודא שההרשמה בוצעה
+            });
+        });
+    </script>
+    
     <!-- Fonts and Libraries -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -245,23 +289,23 @@
                                 <div class="materials-form-grid">
                                     <div class="form-group">
                                         <label for="deliveryAddress" style="font-weight: 600;">כתובת אספקה</label>
-                                        <input type="text" id="deliveryAddress" class="form-input" placeholder="רחוב ומספר בית" required>
+                                        <input type="text" id="deliveryAddress" class="form-input" placeholder="רחוב ומספר בית" required data-hint="כתובת מלאה וברורה לאתר הפרויקט, כולל עיר, רחוב ומספר.">
                                     </div>
                                     <div class="form-group">
                                         <label for="deliveryDate" style="font-weight: 600;">תאריך אספקה מבוקש</label>
-                                        <input type="date" id="deliveryDate" class="form-input" required>
+                                        <input type="date" id="deliveryDate" class="form-input" required data-hint="נא לבחור את התאריך המבוקש. הזמנות דחופות יש לתאם טלפונית.">
                                     </div>
                                     <div class="form-group">
                                         <label for="contactName" style="font-weight: 600;">איש קשר</label>
-                                        <input type="text" id="contactName" class="form-input" placeholder="שם איש קשר באתר" required>
+                                        <input type="text" id="contactName" class="form-input" placeholder="שם איש קשר באתר" required data-hint="שם מלא של איש קשר זמין באתר לצורך פריקה ותיאום.">
                                     </div>
                                     <div class="form-group">
                                         <label for="contactPhone" style="font-weight: 600;">טלפון איש קשר</label>
-                                        <input type="tel" id="contactPhone" class="form-input" placeholder="05X-XXXXXXX" required>
+                                        <input type="tel" id="contactPhone" class="form-input" placeholder="05X-XXXXXXX" required data-hint="מספר טלפון נייד זמין לקבלת שיחת תיאום מהנהג.">
                                     </div>
                                     <div class="form-group">
                                         <label for="transportType" style="font-weight: 600;">סוג הובלה</label>
-                                        <select id="transportType" class="form-input" required>
+                                        <select id="transportType" class="form-input" required data-hint="בחרו אם נדרשת הובלת מנוף וכמה מטרים נדרשים לפריקה.">
                                             <option value="פריקה ידנית">פריקה ידנית</option>
                                             <option value="מנוף 10 מטר">מנוף 10 מטר</option>
                                             <option value="מנוף 15 מטר">מנוף 15 מטר</option>
@@ -274,7 +318,7 @@
                             <!-- שלב 2: בחירת מוצרים -->
                             <div id="form-step-2" class="form-step hidden">
                                 <div class="relative mb-4">
-                                    <input type="text" id="product-search" class="form-input p-3 pl-10" placeholder="חפש מוצר (שם/מק''ט) או הדבק רשימה (מוצר כמות)...">
+                                    <input type="text" id="product-search" class="form-input p-3 pl-10" placeholder="חפש מוצר (שם/מק''ט) או הדבק רשימה (מוצר כמות)..." data-hint="חפש מוצרים מקטלוג או הקלד טקסט חופשי (מוצר, כמות) והקש Enter להוספה.">
                                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
                                 </div>
                                 <div id="product-suggestions" class="bg-white border border-border rounded-md max-h-48 overflow-y-auto mb-4"></div>
@@ -290,7 +334,7 @@
                                     <div id="summary-details" class="space-y-3 text-text-light"></div>
                                     <h3 class="text-xl font-bold mt-6 mb-4 border-b pb-2">פריטים להזמנה</h3>
                                     <div id="summary-items" class="mt-4 pt-4 space-y-2"></div>
-                                    <textarea id="deliveryNotes" class="form-input w-full mt-6" rows="3" placeholder="הערות לנהג / פריקה... (חובה למלא אם יש דגשים)" name="deliveryNotes"></textarea>
+                                    <textarea id="deliveryNotes" class="form-input w-full mt-6" rows="3" placeholder="הערות לנהג / פריקה... (חובה למלא אם יש דגשים)" name="deliveryNotes" data-hint="ציין כאן דגשים מיוחדים לפריקה (קומה, צד, גישה)."></textarea>
                                 </div>
                             </div>
                         </form>
@@ -375,6 +419,19 @@
                 let currentPageId = 'page-containers'; // ברירת מחדל: דף המכולות
                 let mapInstances = {};
                 const dom = {};
+                
+                // Hash map of field IDs to their help text
+                const fieldHints = {
+                    'deliveryAddress': 'כתובת מלאה וברורה לאתר הפרויקט, כולל עיר, רחוב ומספר.',
+                    'deliveryDate': 'נא לבחור את התאריך המבוקש. הזמנות דחופות יש לתאם טלפונית.',
+                    'contactName': 'שם מלא של איש קשר זמין באתר לצורך פריקה ותיאום.',
+                    'contactPhone': 'מספר טלפון נייד זמין לקבלת שיחת תיאום מהנהג.',
+                    'transportType': 'בחרו אם נדרשת הובלת מנוף וכמה מטרים נדרשים לפריקה.',
+                    'product-search': 'חפש מוצרים מקטלוג או הקלד טקסט חופשי (מוצר, כמות) והקש Enter להוספה.',
+                    'deliveryNotes': 'ציין כאן דגשים מיוחדים לפריקה (קומה, צד, גישה).',
+                };
+                
+                let activeHintTimeout;
 
                 function initApp() {
                     document.body.classList.add('loaded');
@@ -442,9 +499,9 @@
                             clientState.productCatalog = data.catalog.map(p => ({
                                 "שם מוצר": p["שם מוצר"],
                                 "מק\"ט": p["מק\"ט"],
-                                "יחידת מידה": p.unitOfMeasure,
-                                "יח' במשטח": p.standardQuantityPerUnit,
-                                "בסיס": p.baseUnit,
+                                "יחידת מידה": p["unitOfMeasure"],
+                                "יח' במשטח": p["standardQuantityPerUnit"],
+                                "בסיס": p["baseUnit"],
                             }));
                              console.log(`Product catalog loaded successfully (${clientState.productCatalog.length} items).`);
                         } else {
@@ -486,6 +543,12 @@
                         };
                         localStorage.setItem('saban_client_id', clientState.id);
                         
+                        // *** OneSignal: הגדרת מזהה משתמש חיצוני לאחר ההתחברות ***
+                        if (window.OneSignal) {
+                            window.OneSignal.setExternalUserId(clientState.id);
+                            console.log(`OneSignal: External User ID set to client ID: ${clientState.id}`);
+                        }
+                        
                         if (!isRefresh) {
                             await playSplashScreenAnimation();
                             dom.appShell.style.display = 'flex';
@@ -526,6 +589,11 @@
                         }
                         
                         const jsonResponse = JSON.parse(textResponse);
+                        
+                        // Check for explicit error structure from GAS, especially for Catalog fetch
+                        if (jsonResponse.status === 'error' && body.action === 'getProductCatalog') {
+                            throw new Error(jsonResponse.message || "Apps Script returned a generic error for catalog fetch.");
+                        }
                         
                         return jsonResponse;
                         
@@ -826,6 +894,26 @@
                 
                 // --- DYNAMIC FORM LOGIC ---
                 
+                function showFieldHint(elementId, isFocus) {
+                    const input = document.getElementById(elementId);
+                    const hintText = fieldHints[elementId];
+
+                    if (!input || !hintText) return;
+
+                    clearTimeout(activeHintTimeout);
+
+                    if (isFocus) {
+                        // הצג הנחייה מיידית ב-Toast
+                        showToast(hintText, '💡');
+                        // הפעל טיימר לניקוי אם המשתמש לא שינה פוקוס
+                        activeHintTimeout = setTimeout(() => {
+                             // ניתן לשלוט כאן על העלמה או החלפה של ההודעה
+                        }, 5000); 
+                    } else {
+                         // כאשר עוזבים את השדה, נקה את הטיימר (כדי למנוע הצפת הודעות)
+                    }
+                }
+                
                 function updateFormView() {
                     // **FIX 2:** Added check for existence before using dom.stepIndicators
                     if (!dom.stepIndicators || dom.stepIndicators.length === 0) {
@@ -846,11 +934,25 @@
                     dom.formBackBtn.style.visibility = step === 1 ? 'hidden' : 'visible';
                     dom.formNextBtn.textContent = step === 3 ? "שלח הזמנה" : "הבא";
 
-                    if (step === 2) {
+                    if (step === 1) {
+                         // Attach dynamic hints to form fields in step 1
+                         document.querySelectorAll('#form-step-1 input, #form-step-1 select').forEach(input => {
+                            input.addEventListener('focus', () => showFieldHint(input.id, true));
+                            input.addEventListener('blur', () => showFieldHint(input.id, false));
+                         });
+                    } else if (step === 2) {
                         renderOrderItems();
                         if (dom.productSearch.value) dom.productSearch.dispatchEvent(new Event('input'));
+                        
+                        // Attach hint to search box
+                        dom.productSearch.addEventListener('focus', () => showFieldHint('product-search', true));
+                        dom.productSearch.addEventListener('blur', () => showFieldHint('product-search', false));
+                        
                     } else if (step === 3) {
                         renderOrderSummary();
+                        const notesInput = document.getElementById('deliveryNotes');
+                        notesInput.addEventListener('focus', () => showFieldHint('deliveryNotes', true));
+                        notesInput.addEventListener('blur', () => showFieldHint('deliveryNotes', false));
                     }
                 }
                 
@@ -892,6 +994,11 @@
                         dom.productSuggestions.innerHTML = '';
                         return;
                     }
+                    
+                    // if (e.type === 'keydown' && e.key === 'Enter') { 
+                    //     // Ignore Enter key here, handled below to process free text entry
+                    //     return;
+                    // }
 
                     if (e.inputType === 'insertFromPaste') {
                         parsePastedList(e.target.value);
@@ -906,6 +1013,26 @@
                     ).slice(0, 5); // הצג עד 5 תוצאות
 
                     renderSuggestions(suggestions);
+                }
+                
+                function handleProductSearchKeydown(e) {
+                     if (e.key === 'Enter') {
+                        e.preventDefault(); 
+                        const query = dom.productSearch.value.trim();
+                        if (query) {
+                             const foundSuggestion = clientState.productCatalog.find(p => p["מק\"ט"] == query || p["שם מוצר"]?.toLowerCase() == query.toLowerCase());
+                             
+                             if (foundSuggestion) {
+                                 // אם יש התאמה מדויקת או מק"ט, הוסף יחידה אחת
+                                 addProductToOrder(foundSuggestion, 1);
+                             } else {
+                                 // טקסט חופשי או הדבקה
+                                 parsePastedList(query);
+                             }
+                             dom.productSearch.value = '';
+                             dom.productSuggestions.innerHTML = '';
+                        }
+                    }
                 }
 
                 function parsePastedList(text) {
@@ -929,7 +1056,7 @@
                              addedCount++;
                          } else {
                              // מוצר בטקסט חופשי (לא זוהה)
-                             addProductToOrder({ "שם מוצר": name, "מק\"ט": "N/A", "יחידת מידה": "יח'", isUnidentified: true, "יח' במשטח": 1, "בסיס": "יח'" }, quantity);
+                             addProductToOrder({ "שם מוצר": name || 'פריט לא מזוהה', "מק\"ט": "N/A", "יחידת מידה": "יח'", isUnidentified: true, "יח' במשטח": 1, "בסיס": "יח'" }, quantity);
                              addedCount++;
                          }
                      });
@@ -1081,7 +1208,6 @@
                             showToast('✅ ההזמנה נשלחה בהצלחה!', `הסטטוס המעודכן הוא: ${response.newStatus || 'חדשה'}. עקוב בהיסטוריה.`);
                             
                             // **NEW LOGIC: WhatsApp sharing is triggered AFTER successful server save**
-                            // The server-side function will handle the actual WhatsApp link creation and logging
                             shareOrderViaWhatsApp(orderData); // We keep the local share function for client-side immediate feedback
                             
                             form.reset();
@@ -1114,7 +1240,7 @@
                     const notesText = order.notes ? `\n\n*📝 הערות לקוח:*\n${order.notes}` : '';
                     
                     const whatsappMessage = encodeURIComponent(
-                        `*📦 הזמנת חומרי בניין חדשה 🧱*\n` +
+                        `*📦 הזמנה חדשה מאפליקציית ח.סבן 🧱*\n` +
                         `*סטטוס: חדשה*\n\n` +
                         `*👤 לקוח:* ${order.clientName}\n` +
                         `*🏗️ פרויקט:* ${order.clientProject}\n` +
@@ -1122,8 +1248,8 @@
                         `*📍 פרטי אספקה:*\n` +
                         `• *כתובת:* ${order.deliveryAddress}\n` +
                         `• *איש קשר:* ${order.contactName} (${order.contactPhone})\n` +
-                        `• *תאריך:* ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}\n\n` +
-                        `*🚚 סוג הובלה: ${order.transportType}*\n\n` +
+                        `• *תאריך:* ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}\n` +
+                        `• *הובלה:* ${order.transportType}\n\n` +
                         `*🧱 פריטים שהוזמנו:*\n${itemsList}` +
                         `${notesText}`
                     );
@@ -1188,13 +1314,27 @@
                 function showToast(message, icon = 'ℹ️') { 
                     const toast = document.createElement('div');
                     toast.className = `toast`;
+                    
+                    // חישוב משך התצוגה לפי אורך הטקסט
+                    const textLength = message.length;
+                    const baseDuration = 3000; // 3 שניות בסיס
+                    // מוסיף 50 אלפית שנייה לכל תו מעל 30 תווים
+                    const dynamicDuration = baseDuration + Math.max(0, textLength - 30) * 50; 
+                    
                     toast.innerHTML = `<span class="toast-icon">${icon}</span> <span>${message}</span>`;
                     dom.toastContainer.appendChild(toast);
-                    setTimeout(() => toast.classList.add('show'), 100);
-                    setTimeout(() => {
-                        toast.classList.remove('show');
-                        toast.addEventListener('transitionend', () => toast.remove());
-                    }, 3000);
+                    
+                    // מריץ את הטיימרים רק אם ה-toastContainer קיים
+                    if (dom.toastContainer) {
+                        setTimeout(() => toast.classList.add('show'), 100);
+                        setTimeout(() => {
+                            toast.classList.remove('show');
+                            toast.addEventListener('transitionend', () => toast.remove());
+                        }, dynamicDuration);
+                    } else {
+                         // Fallback for immediate visibility during debugging
+                         console.log(`[TOAST] ${icon} ${message}`);
+                    }
                 }
                 
                 function setupEventListeners() {
@@ -1212,7 +1352,15 @@
                             case 'help-fab': dom.helpModal.classList.add('show'); break;
                             case 'help-close': dom.helpModal.classList.remove('show'); break;
                             case 'toggle-profile': dom.profileContainer.classList.toggle('active'); break;
-                            case 'logout': localStorage.clear(); window.location.reload(); break;
+                            case 'logout': 
+                                localStorage.clear(); 
+                                // OneSignal: הסרת מזהה חיצוני בעת התנתקות
+                                if (window.OneSignal) {
+                                    window.OneSignal.removeExternalUserId();
+                                    console.log('OneSignal: External User ID removed on logout.');
+                                }
+                                window.location.reload(); 
+                                break;
                             case 'new-order': openOrderModal('הזמנה חדשה'); break;
                             case 'chat-template': document.getElementById('chat-message').value = actionElement.textContent; break;
                             case 'refresh-data':
@@ -1296,7 +1444,8 @@
                     
                     // Product search input
                     dom.productSearch.addEventListener('input', handleProductSearch);
-
+                    dom.productSearch.addEventListener('keydown', handleProductSearchKeydown); // Handle Enter
+                    
                     // Attach to body since order items are rendered dynamically
                     dom.body.addEventListener('change', e => {
                         if (e.target.dataset.action === 'update-quantity') {
