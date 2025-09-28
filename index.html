@@ -13,38 +13,61 @@
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
         window.OneSignalDeferred = window.OneSignalDeferred || [];
+        
+        // פונקציה לביצוע שיוך External User ID ועדכון סטטוסים.
+        // הקריאה לפונקציה זו מובטחת לקרות רק כשה-SDK של OneSignal מוכן.
+        async function setOneSignalExternalId(clientId) {
+            if (!clientId || !window.OneSignalDeferred) return;
+            
+            // דוחף את הפעולה לתור של OneSignal
+            window.OneSignalDeferred.push(async function(OneSignal) {
+                try {
+                    // 1. שיוך מזהה הלקוח למכשיר
+                    await OneSignal.setExternalUserId(clientId);
+                    console.log(`OneSignal: External User ID set to client ID: ${clientId}`);
+
+                    // 2. בדיקת סטטוס הרשאה (חסינות מפני שגיאת setExternalUserId)
+                    const isSubscribed = await OneSignal.isPushNotificationsEnabled();
+                    
+                    if (isSubscribed) {
+                         // הצגת הודעת הצלחה ב-Toast רק אם המשתמש אכן אישר התראות
+                         window.showToast(`✅ Push Notifications מחובר ללקוח ${clientId}`, '🔔');
+                    } else {
+                         console.warn(`OneSignal: המשתמש מחובר (${clientId}), אך לא אישר הרשאת התראות.`);
+                         // אם ההרשאה חסומה, נציג Prompt כדי שהמשתמש יוכל לאשר
+                         OneSignal.showSlidedownPrompt();
+                    }
+
+                } catch(e) {
+                    console.error("OneSignal setup failed:", e);
+                }
+            });
+        }
+        
+        // ------------------
+        // אתחול OneSignal
+        // ------------------
         OneSignalDeferred.push(async function(OneSignal) {
             await OneSignal.init({
                 appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
-                // ההגדרה הבאה הכרחית עבור משתמשי Safari
                 safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
-                // כפתור ההרשמה הסטנדרטי של OneSignal
                 notifyButton: {
                     enable: true,
                 },
-                // *** תיקון 1: הסרנו את הנתיב הקשיח כדי למנוע 404 ***
+                // *** תיקון 1: נשאר ריק כדי שהדפדפן ימצא את OneSignalSDKWorker.js ב-root ***
                 serviceWorkerParam: {
                     scope: '/',
-                    // path: 'OneSignalSDKWorker.js' // הוסר
                 },
             });
-
-            // *** חלק חשוב: איך להתחבר ללקוח ספציפי (Targeting) ***
-            // נשארת כאן קריאה מותנית לטובת לקוחות שמחוברים כבר בטעינה הראשונית.
+            
+            // קריאה ראשונית לשיוך אם יש Client ID שמור
             const clientId = localStorage.getItem('saban_client_id');
             if (clientId) {
-                OneSignal.setExternalUserId(clientId);
-                console.log(`OneSignal (Init): External User ID set to client ID: ${clientId}`);
+                setOneSignalExternalId(clientId);
             }
-
-            // ניתן גם להוסיף Event Listener לכפתור ההרשמה של OneSignal
-            OneSignal.on('subscriptionChange', function (isSubscribed) {
-                console.log("OneSignal subscription status changed: " + isSubscribed);
-                // אם אתה משתמש ב-setExternalUserId, כדאי לוודא שההרשמה בוצעה
-            });
         });
 
-        // *** פונקציה ציבורית חדשה לבדיקת סטטוס התראות (לצורך דיבוג) ***
+        // *** פונקציה ציבורית לבדיקת סטטוס התראות (לצורך דיבוג) ***
         window.checkPushStatus = async function() {
             if (window.OneSignalDeferred) {
                 window.OneSignalDeferred.push(async function(OneSignal) {
@@ -752,17 +775,8 @@
                         };
                         localStorage.setItem('saban_client_id', clientState.id);
                         
-                        // *** תיקון 2: העברנו את setExternalUserId לתוך OneSignalDeferred בתוך loadClientData ***
-                        if (window.OneSignalDeferred) {
-                            window.OneSignalDeferred.push(function(OneSignal) {
-                                // OneSignal.setExternalUserId נתון ומוכח כי הוא זמין כאן
-                                OneSignal.setExternalUserId(clientState.id);
-                                console.log(`OneSignal (Login): External User ID set to client ID: ${clientState.id}`);
-                                
-                                // TOAST לאישור חיבור OneSignal
-                                showToast(`✅ Push Notifications מחובר ללקוח ${clientState.id}`, '🔔');
-                            });
-                        }
+                        // *** תיקון 2: העברנו את setExternalUserId לקריאה חיצונית שתרוץ רק לאחר שה-SDK מוכן ***
+                        setOneSignalExternalId(clientState.id);
                         
                         if (!isRefresh) {
                             await playSplashScreenAnimation();
