@@ -367,6 +367,9 @@
                 });
                 clearTimeout(timeoutId);
                 
+                if (response.status === 404) {
+                     throw new Error(`API Not Found (404). ודא שכתובת ה-Apps Script נכונה ומפורסמת.`);
+                }
                 if (!response.ok) {
                     throw new Error(`HTTP Error: ${response.status}`);
                 }
