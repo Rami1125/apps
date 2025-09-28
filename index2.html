@@ -798,12 +798,16 @@
 
                 function renderHeaderAndGreeting() {
                     const defaultAvatar = "https://placehold.co/40x40/0b72b9/ffffff?text=EA";
-                    if(dom.clientNameHeader) dom.clientNameHeader.textContent = clientState.name;
+                    // *** FIX: ודא ש-clientState.name הוא תמיד string לפני split ***
+                    const clientName = clientState.name || 'אורח';
+                    
+                    if(dom.clientNameHeader) dom.clientNameHeader.textContent = clientName;
                     if(dom.profileAvatar) dom.profileAvatar.src = clientState.avatar || defaultAvatar;
                     if(dom.profileAvatar) dom.profileAvatar.onerror = () => dom.profileAvatar.src = defaultAvatar;
                     const hour = new Date().getHours();
                     let greetingText = (hour < 12) ? "בוקר טוב" : (hour < 18) ? "צהריים טובים" : "ערב טוב";
-                    if(dom.greeting) dom.greeting.textContent = `${greetingText}, ${clientState.name.split(' ')[0]}`;
+                    
+                    if(dom.greeting) dom.greeting.textContent = `${greetingText}, ${clientName.split(' ')[0]}`;
                 }
                 
                 function renderHomePage() {
