@@ -431,18 +431,12 @@
                     });
                 }
                 
-                // **UPDATED: Loads product catalog from API endpoint**
+                // **UPDATED: Loads product catalog using POST request**
                 async function loadProductCatalog() {
                     try {
-                        const url = `${API_URL}?sheet=ProductCatalog`; // משתמש במפתח ProductCatalog כפי שהוגדר ב-Apps Script
-                        const response = await fetch(url, { method: 'GET', mode: 'cors' });
-                        
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
-                        }
-                        
-                        const data = await response.json();
-                        
+                        // משתמשים ב-apiPost כדי להפעיל את action=getProductCatalog ב-doPost
+                        const data = await apiPost({ action: 'getProductCatalog' });
+
                         if (data.status === 'success' && data.catalog) {
                              // Renaming columns to match existing local structure for compatibility
                             clientState.productCatalog = data.catalog.map(p => ({
