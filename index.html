@@ -369,7 +369,8 @@
         try {
             document.addEventListener('DOMContentLoaded', () => {
                 // *** IMPORTANT: Replace with your actual deployed Apps Script URL ***
-                const API_URL = "https://script.google.com/macros/s/AKfycbz5zkASUR1Ye1ZzYvPDvq4VhZegvZHzG5vdczLEaahcw_NDO2D9vb_4sGVYFrjrHzc/exec";
+                // ודא שכתובת ה-Apps Script שלך עדכנית כאן!
+                const API_URL = "https://script.google.com/macros/s/AKfycbx07zliATi8KaNVWALPQugtzCsuJ1CojF_N8-6wUE3AKY18Lho66XZplGSf8v2xdaVf/exec";
                 
                 let clientState = { id: null, name: null, avatar: null, orders: [], addresses: new Set(), currentHistoryFilter: 'all', productCatalog: [], materialOrder: { items: [], step: 1 } };
                 let currentPageId = 'page-containers'; // ברירת מחדל: דף המכולות
@@ -436,6 +437,11 @@
                     try {
                         const url = `${API_URL}?sheet=קטלוג מוצרים`;
                         const response = await fetch(url, { method: 'GET', mode: 'cors' });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        
                         const data = await response.json();
                         
                         if (data.status === 'success' && data.catalog) {
@@ -447,8 +453,9 @@
                                 "יח' במשטח": p.standardQuantityPerUnit,
                                 "בסיס": p.baseUnit,
                             }));
+                             console.log(`Product catalog loaded successfully (${clientState.productCatalog.length} items).`);
                         } else {
-                            console.warn("API did not return a successful catalog. Using mock or empty catalog.");
+                            console.warn("API did not return a successful catalog. Using mock or empty catalog.", data.message);
                             clientState.productCatalog = []; // Ensure it's an array even if call fails
                         }
                     } catch (error) {
@@ -461,12 +468,15 @@
 
                 async function loadClientData(clientId, isRefresh = false) {
                     try {
+                        // **ACTION: Login/Load Client Data**
                         const data = await apiPost({ action: 'login', identifier: clientId });
-                        if (data.status === 'error' || !data.clientName) throw new Error(data.message || "Client not found");
+
+                        if (data.status === 'error' || !data.user || !data.user["שם לקוח"]) {
+                             // This catches 'not_found' or general server errors
+                             throw new Error(data.message || "Login failed or client not found.");
+                        }
                         
-                        // Mock data enrichment for demo purposes if real data is missing fields
-                        // We use the real user data from the API response but mock the orders since the user's GAS logic only returned user details on login.
-                        const clientName = data.clientName || data.user["שם לקוח"] || 'ערן אזולאי';
+                        const clientName = data.user["שם לקוח"];
                         
                         // Mock Orders: Should be replaced by a dedicated API call to get all client orders
                         const mockOrders = [
@@ -476,9 +486,9 @@
 
                         clientState = { 
                             ...clientState, 
-                            id: data.clientId || data.user?.["מספר לקוח"], 
+                            id: data.user["מספר לקוח"], 
                             name: clientName, 
-                            avatar: data.avatarUrl || data.user?.["תמונת פרופיל"], 
+                            avatar: data.user["תמונת פרופיל"], 
                             orders: mockOrders, 
                             addresses: new Set(mockOrders.map(o => o['כתובת']).filter(Boolean)) 
                         };
@@ -504,8 +514,8 @@
                         dom.splashScreen.classList.remove('loading');
                         dom.splashScreen.style.display = 'none';
                         promptForClientId();
-                        showToast("שגיאה בטעינת נתונים. אנא נסה שוב.", '❌');
-                        throw error;
+                        showToast(`שגיאה בטעינת נתונים: ${error.message}. נסה שוב.`, '❌');
+                        // No need to re-throw, promptForClientId handles the failure path
                     }
                 }
                 
@@ -513,44 +523,21 @@
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 15000);
                     try {
-                        // לוגיקת טיפול בפונקציית submitMaterialsOrder (Mocked locally for demo, but server implementation updated)
-                        if (body.action === 'submitMaterialsOrder') {
-                             // Use the server's endpoint for POST requests
-                            const response = await fetch(API_URL, { method: 'POST', mode: 'cors', body: JSON.stringify(body), cache: 'no-cache', headers: { 'Content-Type': 'text/plain' }, signal: controller.signal });
-                            clearTimeout(timeoutId);
-                            if (!response.ok) throw new Error(`Network error`);
-                            const textResponse = await response.text();
-                            const jsonResponse = JSON.parse(textResponse);
-
-                            if (jsonResponse.status === 'success') {
-                                // IMPORTANT: Server response now includes whatsappUrl, which we use here
-                                shareOrderViaWhatsApp(body.order); // Use local sharing function
-                                return { status: 'success', newStatus: 'חדשה' };
-                            } else {
-                                throw new Error(jsonResponse.message || 'שגיאה כללית בשליחת ההזמנה לשרת.');
-                            }
-                        }
-
-                        // Default POST logic (e.g., login, container requests)
                         const response = await fetch(API_URL, { method: 'POST', mode: 'cors', body: JSON.stringify(body), cache: 'no-cache', headers: { 'Content-Type': 'text/plain' }, signal: controller.signal });
                         clearTimeout(timeoutId);
-                        if (!response.ok) throw new Error(`Network error`);
+
+                        if (!response.ok) throw new Error(`Network error (HTTP Status ${response.status})`);
+                        
                         const textResponse = await response.text();
                         if (textResponse.startsWith('<')) {
-                            throw new Error("Received HTML response instead of JSON. Check script URL or permissions.");
+                            // This means the GAS script URL is wrong or deployment failed, returning HTML error page
+                            throw new Error("Invalid server response. Check Apps Script URL/Deployment.");
                         }
+                        
                         const jsonResponse = JSON.parse(textResponse);
-                        // Handle the different login response structure from the new GAS logic
-                         if (body.action === 'login' && jsonResponse.status === 'success' && jsonResponse.user) {
-                             return { 
-                                 status: 'success', 
-                                 clientId: jsonResponse.user["מספר לקוח"], 
-                                 clientName: jsonResponse.user["שם לקוח"],
-                                 avatarUrl: jsonResponse.user["תמונת פרופיל"],
-                                 user: jsonResponse.user // return full user object for access to project/address
-                             };
-                         }
+                        
                         return jsonResponse;
+                        
                     } catch(error) {
                         clearTimeout(timeoutId);
                         console.error("API Post Error:", error);
@@ -1224,7 +1211,7 @@
                         const actionElement = e.target.closest('[data-action]');
                         if (!actionElement) {
                             if(!e.target.closest('#profile-container')) dom.profileContainer.classList.remove('active');
-                            if(e.target.classList.contains('modal-overlay')) e.target.classList.remove('show');
+                            if(e.target.classList.contains('modal-overlay')) dom.modalContainer.classList.remove('show');
                             return;
                         };
 
