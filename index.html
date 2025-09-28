@@ -246,6 +246,8 @@
 
         /** Generic POST request to the Apps Script API. */
         async function apiPost(body) {
+            // FIX: Add logging to see the exact request body being sent.
+            console.log("Sending API request:", body);
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 20000);
             try {
@@ -351,7 +353,6 @@
         }
 
         async function loadProductCatalog() {
-            // FIX: Pass customerId to the API, as the server likely requires it for all authenticated actions.
             const data = await apiPost({ action: 'getProductCatalog', customerId: state.clientId });
             state.productCatalog = (data.catalog || []).map(p => ({
                 ...p, "מק\"ט": p["מק\"ט"] || 'N/A', "שם מוצר": p["שם מוצר"] || 'מוצר ללא שם',
