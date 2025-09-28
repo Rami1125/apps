@@ -48,22 +48,29 @@
         // אתחול OneSignal
         // ------------------
         OneSignalDeferred.push(async function(OneSignal) {
-            await OneSignal.init({
-                appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
-                safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
-                notifyButton: {
-                    enable: true,
-                },
-                // *** תיקון 1: נשאר ריק כדי שהדפדפן ימצא את OneSignalSDKWorker.js ב-root ***
-                serviceWorkerParam: {
-                    scope: '/',
-                },
-            });
-            
-            // קריאה ראשונית לשיוך אם יש Client ID שמור
-            const clientId = localStorage.getItem('saban_client_id');
-            if (clientId) {
-                setOneSignalExternalId(clientId);
+            // *** תיקון 2: עוטפים ב-try/catch כדי למנוע קריסה בסביבת Canvas לא מאושרת ***
+            try {
+                await OneSignal.init({
+                    appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
+                    safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
+                    notifyButton: {
+                        enable: true,
+                    },
+                    // תיקון: הסרת scope.
+                    serviceWorkerParam: {
+                        // scope: '/',  <-- הוסר!
+                    },
+                });
+                
+                // קריאה ראשונית לשיוך אם יש Client ID שמור
+                const clientId = localStorage.getItem('saban_client_id');
+                if (clientId) {
+                    setOneSignalExternalId(clientId);
+                }
+            } catch (error) {
+                // שגיאה זו תתרחש ב-Canvas שאינו תואם ל-URL המאושר ב-OneSignal
+                console.error("❌ OneSignal Initialization FAILED:", error.message);
+                console.warn("⚠️ ניתן להתעלם משגיאה זו בסביבת הפיתוח (Canvas). היא תיעלם ב-GitHub Pages.");
             }
         });
 
@@ -71,23 +78,27 @@
         window.checkPushStatus = async function() {
             if (window.OneSignalDeferred) {
                 window.OneSignalDeferred.push(async function(OneSignal) {
-                    const status = await OneSignal.getSubscription();
-                    const externalId = await OneSignal.getExternalUserId();
-                    
-                    console.group("OneSignal Status Check");
-                    console.log(`✅ External User ID (Client ID): ${externalId || "N/A"}`);
-                    console.log(`✅ Push Enabled in Browser: ${status.userSubscription}`);
-                    console.log(`✅ Subscription ID (Device Token): ${status.id || "N/A - USER NOT SUBSCRIBED"}`);
-                    
-                    if (!status.userSubscription) {
-                        console.warn("⚠️ המשתמש לא מנוי! יש לוודא שהפעמון של OneSignal נלחץ ואושר.");
-                        // ניסיון הצגת הפעמון אם הוא לא הוצג
-                        OneSignal.showSlidedownPrompt();
-                    } else if (externalId !== localStorage.getItem('saban_client_id')) {
-                        console.error("❌ External ID אינו תואם! יש שגיאה בהתחברות.");
+                    try {
+                        const status = await OneSignal.getSubscription();
+                        const externalId = await OneSignal.getExternalUserId();
+                        
+                        console.group("OneSignal Status Check");
+                        console.log(`✅ External User ID (Client ID): ${externalId || "N/A"}`);
+                        console.log(`✅ Push Enabled in Browser: ${status.userSubscription}`);
+                        console.log(`✅ Subscription ID (Device Token): ${status.id || "N/A - USER NOT SUBSCRIBED"}`);
+                        
+                        if (!status.userSubscription) {
+                            console.warn("⚠️ המשתמש לא מנוי! יש לוודא שהפעמון של OneSignal נלחץ ואושר.");
+                            // ניסיון הצגת הפעמון אם הוא לא הוצג
+                            OneSignal.showSlidedownPrompt();
+                        } else if (externalId !== localStorage.getItem('saban_client_id')) {
+                            console.error("❌ External ID אינו תואם! יש שגיאה בהתחברות.");
+                        }
+                        console.groupEnd();
+                        return status; // החזרת הסטטוס לשימוש פנימי
+                    } catch (e) {
+                         console.error("OneSignal Status Check failed (SDK Error):", e.message);
                     }
-                    console.groupEnd();
-                    return status; // החזרת הסטטוס לשימוש פנימי
                 });
             } else {
                 console.error("OneSignal SDK עדיין לא נטען.");
@@ -1924,8 +1935,5 @@
         }
     })();
     </script>
-
-    <!-- הוסרו לחלוטין כל קטעי הקוד הקשורים ל-Firebase, FCM ו-Service Workers. -->
-    <!-- התקשורת מתבצעת כעת רק דרך API_URL. -->
 </body>
 </html>
