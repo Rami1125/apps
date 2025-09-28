@@ -466,8 +466,8 @@
 
                 async function loadClientData(clientId, isRefresh = false) {
                     try {
-                        // **ACTION: Login/Load Client Data** - שולח identifier
-                        const data = await apiPost({ action: 'login', identifier: clientId });
+                        // *** התיקון כאן: שינוי identifier ל-customerId כדי להתאים ל-Apps Script ***
+                        const data = await apiPost({ action: 'login', customerId: clientId });
 
                         if (data.status === 'error' || !data.user || !data.user["שם לקוח"]) {
                              // This catches 'not_found' or general server errors
