@@ -69,6 +69,7 @@
         @keyframes subtle-pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(11, 114, 185, 0.3); } 70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(11, 114, 185, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(11, 114, 185, 0); } }
         @keyframes overdue-pulse { 0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4); } 70% { box-shadow: 0 0 0 12px rgba(229, 62, 62, 0); } 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); } }
         @keyframes siren-blink { 0%, 100% { background-color: #ffc107; box-shadow: 0 0 5px #ffc107; } 50% { background-color: #ff9800; box-shadow: 0 0 15px #ff9800; } }
+        @keyframes notification-pulse { 0% { box-shadow: 0 0 0 0 rgba(255, 159, 28, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(255, 159, 28, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 159, 28, 0); } }
         
         /* סגנון חדש לכפתור סטטוס הובלה */
         .status-badge {
@@ -183,6 +184,89 @@
         .profile-container.active .logout-popup { opacity: 1; visibility: visible; transform: translateY(0); }
         .logout-btn { background: none; border: none; padding: 8px 12px; font-weight: 600; color: var(--danger); display: flex; align-items: center; gap: 5px; cursor: pointer; }
 
+        /* --- צ'אט והתראות --- */
+        .chat-fab {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 55px;
+            height: 55px;
+            background-color: var(--brand);
+            border-radius: 50%;
+            border: none;
+            box-shadow: var(--shadow);
+            z-index: 1001;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+        .chat-fab img { width: 30px; height: 30px; }
+
+        .chat-tooltip {
+            position: absolute;
+            right: 65px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--card);
+            color: var(--text-dark);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: var(--shadow);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .chat-fab:hover .chat-tooltip { opacity: 1; }
+        
+        .notification-dot {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            border: 2px solid var(--card);
+            animation: notification-pulse 2s infinite;
+        }
+        
+        /* סטייל להודעות צ'אט */
+        .chat-message {
+            padding: 10px 15px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            max-width: 85%;
+            font-size: 15px;
+        }
+        .chat-user {
+            background-color: var(--brand);
+            color: white;
+            margin-right: auto;
+            border-bottom-right-radius: 0;
+        }
+        .chat-system {
+            background-color: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text-dark);
+            margin-left: auto;
+            border-bottom-left-radius: 0;
+            position: relative;
+        }
+        .chat-metadata {
+            display: block;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+            text-align: left;
+        }
+
+        /* --- היתר נשאר כמו קודם --- */
+
         #history-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
         .filter-btn { background-color: var(--card); color: var(--text-dark); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
         .filter-btn.active { background-color: var(--brand); color: white; border-color: var(--brand); font-weight: 700; }
@@ -281,6 +365,7 @@
                 </button>
                 <div id="profile-container" class="profile-container" data-action="toggle-profile">
                     <img id="profile-avatar" src="" alt="Profile" class="profile-avatar">
+                    <div id="notification-badge" class="notification-dot" style="display: none;"></div>
                     <div class="logout-popup">
                         <button data-action="logout" class="logout-btn">
                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/></svg>
@@ -400,7 +485,19 @@
             <!-- עמוד היסטוריה -->
             <div id="page-history" class="page"><h1 class="page-title">היסטוריית הזמנות</h1><div id="history-content"></div></div>
             <!-- עמוד צור קשר -->
-            <div id="page-chat" class="page"><h1 class="page-title">צור קשר</h1><div id="chat-content" class="card"></div></div>
+            <div id="page-chat" class="page">
+                <h1 class="page-title">צ'אט ותקשורת מהירה</h1>
+                <div id="chat-history-container" class="card" style="min-height: 400px; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 0;">
+                    <div id="chat-messages" style="overflow-y: auto; flex-grow: 1; margin-bottom: 15px;">
+                        <!-- הודעות יוכנסו לכאן -->
+                    </div>
+                    <form id="chat-form" style="padding-top: 15px; border-top: 1px solid var(--border);">
+                        <label for="chat-message" style="font-weight: 600; display: block; margin-bottom: 5px;">שלח הודעה למחלקת הזמנות:</label>
+                        <textarea id="chat-message" required placeholder="הקלד כאן הודעה, בקשה או שאלה (יישלח כווטסאפ)" class="form-input" style="width:100%; height:80px;"></textarea>
+                        <button type="submit" class="btn" style="width:100%; margin-top: 10px;">שלח הודעה ושיתוף לווטסאפ</button>
+                    </form>
+                </div>
+            </div>
         </main>
         
         <nav class="bottom-nav">
@@ -431,26 +528,12 @@
     </div>
 
     <button class="help-fab" data-action="help-fab" style="display: none;">?</button>
-    <div id="help-modal" class="help-modal">
-        <div class="help-header"><h2 style="margin:0;">מדריך למשתמש</h2><button data-action="help-close" class="help-close">&times;</button></div>
-        <div style="flex-grow: 1; padding: 20px; overflow-y: auto;">
-             <div class="card"><h3 style="color: var(--brand); margin-bottom: 10px;">ברוכים הבאים!</h3><p>האפליקציה מאפשרת לכם לנהל את המכולות וההזמנות שלכם בקלות ובמהירות.</p></div>
-             <div class="card"><h4>📦 המכולות שלי (דף הבית)</h4><p>כאן תראו את המכולות הפעילות שלכם, סטטוס שכירות וצפי הגעה של הובלה חדשה.</p></div>
-             <div class="card"><h4>🧱 חומרי בניין</h4><p>עמוד זה מאפשר לכם לבצע הזמנה חדשה ומפורטת של חומרים למשלוח.</p></div>
-             <div class="card"><h4>📈 היסטוריה</h4><p>צפו בכל ההזמנות שלכם, סננו לפי פרויקט, ולחצו על שורה לקבלת פרטים מלאים.</p></div>
-             <div class="card">
-                <h4>התקנה למסך הבית</h4>
-                <p style="margin-bottom: 15px;">להתקנת האפליקציה וחווית שימוש מלאה, בצעו את הפעולות הבאות:</p>
-                <div style="text-align: center;">
-                    <p><strong>באייפון (דפדפן ספארי):</strong></p>
-                    <p>לחצו על כפתור השיתוף <svg style="display: inline-block; vertical-align: middle;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> ובחרו "הוסף למסך הבית".</p>
-                    <p style="margin-top: 10px;"><strong>באנדרואיד (דפדפן כרום):</strong></p>
-                    <p>לחצו על כפתור התפריט (שלוש נקודות) ובחרו "התקן אפליקציה" או "הוסף למסך הבית".</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
+    <!-- כפתור צ'אט צף (FAB) -->
+    <button class="chat-fab" data-action="navigate" data-page="page-chat">
+        <img src="https://img.icons8.com/?size=100&id=XFOumBmRR5zT&format=png&color=FFFFFF" alt="chat icon">
+        <span class="chat-tooltip">פנייה מהירה למחלקת הזמנות</span>
+    </button>
+
     <div id="splash-screen"><div id="splash-logo"><img src="https://i.postimg.cc/2SbDgD1B/1.png" alt="לוגו ח.סבן" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div><div class="splash-loader"></div></div>
     <div id="toast-container"></div>
     <div id="modal-container" class="modal-overlay"></div>
@@ -463,17 +546,24 @@
             document.addEventListener('DOMContentLoaded', () => {
                 // *** חשוב מאוד: החלף בכתובת ה-Apps Script המפורסמת שלך ***
                 const API_URL = "https://script.google.com/macros/s/AKfycbx07zliATi8KaNVWALPQugtzCsuJ1CojF_N8-6wUE3AKY18Lho66XZplGSf8v2xdaVf/exec";
+                const WHATSAPP_NUMBER = '9725XXXXXXXX'; // החלף במספר הווטסאפ של מחלקת ההזמנות
                 
                 let clientState = { 
                     id: null, 
                     name: null, 
                     avatar: null, 
                     orders: [], 
-                    materialOrders: [], /* חדש: לאחסון הזמנות חומרים */
+                    materialOrders: [], 
                     addresses: new Set(), 
                     currentHistoryFilter: 'all', 
                     productCatalog: [], 
-                    materialOrder: { items: [], step: 1 } 
+                    materialOrder: { items: [], step: 1 },
+                    chatHistory: [ /* Mock Chat History */
+                        { sender: 'system', message: 'שלום וברוך הבא, אני העוזר האישי שלך. איך אוכל לעזור לך היום?', timestamp: new Date().toISOString() },
+                        { sender: 'user', message: 'מה הסטטוס של הזמנה 1236?', timestamp: new Date(Date.now() - 30000).toISOString() },
+                        { sender: 'system', message: 'הזמנת מכולה 1236 נמצאת בסטטוס "בדרך" עם צפי הגעה 14:00. לבירור נוסף, אנא שלח הודעה.', timestamp: new Date().toISOString() }
+                    ],
+                    hasUnreadChat: true // נניח שיש הודעה חדשה בפתיחה הראשונית
                 };
                 let currentPageId = 'page-containers'; // ברירת מחדל: דף המכולות
                 let mapInstances = {};
@@ -541,12 +631,15 @@
                         clientNameHeader: document.getElementById('client-name-header'),
                         profileContainer: document.getElementById('profile-container'),
                         profileAvatar: document.getElementById('profile-avatar'),
+                        notificationBadge: document.getElementById('notification-badge'), // חדש
                         clock: document.getElementById('clock'),
                         date: document.getElementById('date'),
                         helpFab: document.querySelector('.help-fab'),
                         helpModal: document.getElementById('help-modal'),
                         historyContent: document.getElementById('history-content'),
                         chatContent: document.getElementById('chat-content'),
+                        chatFab: document.querySelector('.chat-fab'), // חדש
+                        chatMessages: document.getElementById('chat-messages'), // חדש
                         // Elements for the new dynamic form
                         materialsForm: document.getElementById('materials-order-form'),
                         formSteps: document.querySelectorAll('.form-step'),
@@ -624,7 +717,9 @@
                             avatar: data.user["תמונת פרופיל"], 
                             orders: mockContainerOrders, 
                             materialOrders: mockMaterialOrders,
-                            addresses: new Set(allOrders.map(o => o['כתובת']).filter(Boolean)) 
+                            addresses: new Set(allOrders.map(o => o['כתובת']).filter(Boolean)),
+                            // נשמר מצב התראה בצ'אט ב-localStorage אם קיים, אחרת משתמש בערך ברירת המחדל
+                            hasUnreadChat: JSON.parse(localStorage.getItem('saban_unread_chat') || 'true'), 
                         };
                         localStorage.setItem('saban_client_id', clientState.id);
                         
@@ -644,11 +739,13 @@
                             navigateTo('page-containers', true); // כעת המכולות דף הבית
                             renderAllPages();
                             dom.helpFab.style.display = 'block';
+                            dom.chatFab.style.display = 'flex';
                         } else {
                             renderHeaderAndGreeting();
                             renderContainersPage(); // מרנדר את המכולות (דף הבית החדש)
                             renderHistoryPage(); 
                             renderHomePage(); // מרנדר את דף הבית המקורי כדאשבורד פנימי
+                            updateChatNotificationBadge(); // עדכון התראה לאחר רענון
                         }
 
                     } catch (error) {
@@ -741,13 +838,34 @@
                     });
                 }
                 
+                function updateChatNotificationBadge() {
+                    if (clientState.hasUnreadChat) {
+                        dom.notificationBadge.style.display = 'block';
+                        dom.chatFab.style.animation = 'notification-pulse 2s infinite';
+                    } else {
+                        dom.notificationBadge.style.display = 'none';
+                        dom.chatFab.style.animation = 'none';
+                    }
+                }
+
                 function navigateTo(pageId, isInitial = false) {
                      if (!isInitial && currentPageId === pageId) return;
                     const oldPage = document.getElementById(currentPageId);
                     const newPage = document.getElementById(pageId);
                     if (!newPage) return;
                     
-                    // סדר העמודים החדש לטובת אנימציית המעבר
+                    // טיפול בהתראה בצ'אט
+                    if (pageId === 'page-chat' && clientState.hasUnreadChat) {
+                        clientState.hasUnreadChat = false;
+                        localStorage.setItem('saban_unread_chat', 'false');
+                        updateChatNotificationBadge();
+                        renderChatPage(); // רנדור מחדש כדי לוודא גלילה למטה
+                        setTimeout(() => {
+                             const chatContainer = document.getElementById('chat-messages');
+                             chatContainer.scrollTop = chatContainer.scrollHeight;
+                        }, 100);
+                    }
+                    
                     const pagesOrder = ['page-containers', 'page-materials', 'page-history', 'page-chat'];
                     
                     if (isInitial) { newPage.classList.add('active'); } 
@@ -775,6 +893,9 @@
                     currentPageId = pageId;
                     dom.navButtons.forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
                     if (pageId === 'page-materials') updateFormView(); // ודא ששלב 1 מוצג
+
+                    // ודא שהסמל הצף גלוי רק בדף הבית
+                    dom.chatFab.style.display = (pageId === 'page-containers' || pageId === 'page-home') ? 'flex' : 'none';
                 }
 
                 function renderAllPages() {
@@ -783,6 +904,7 @@
                     renderContainersPage(); 
                     renderHistoryPage();
                     renderChatPage();
+                    updateChatNotificationBadge(); // הצגת התראה בעת טעינה ראשונית
                 }
 
                 function renderHeaderAndGreeting() {
@@ -972,10 +1094,27 @@
                     dom.historyContent.innerHTML = tableHTML;
                 }
 
+                // *** פונקציה משודרגת לרנדור צ'אט ***
                 function renderChatPage() {
-                    const templates = { "שאלות נפוצות": ["מה צפי ההגעה?", "האם ניתן להאריך שהייה?"], "בקשות": ["המכולה מלאה, לתאם פינוי.", "פינוי דחוף, צרו קשר."] };
-                    let html = Object.keys(templates).map(cat => `<p style="font-weight: 600; margin-top: 15px; margin-bottom: 5px;">${cat}</p>` + templates[cat].map(t => `<button class="btn secondary" data-action="chat-template" style="width: 100%; justify-content: flex-start; text-align: right; margin-bottom: 5px;">${t}</button>`).join('')).join('');
-                    dom.chatContent.innerHTML = `<div id="chat-templates">${html}</div><form id="chat-form" style="margin-top: 20px;"><label for="chat-message">או כתוב הודעה חופשית: 👋</label><textarea id="chat-message" required placeholder="כתוב כאן..." style="width:100%; height:80px; padding:10px; border-radius:8px; border:1px solid var(--border); margin-top:5px;"></textarea><button type="submit" class="btn" style="width:100%; margin-top: 10px;">שלח הודעה</button></form>`;
+                    if (!dom.chatMessages) return;
+
+                    // רנדור ההודעות
+                    dom.chatMessages.innerHTML = clientState.chatHistory.map(msg => {
+                        const senderClass = msg.sender === 'user' ? 'chat-user' : 'chat-system';
+                        const time = new Date(msg.timestamp).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+                        const date = new Date(msg.timestamp).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
+
+                        return `
+                            <div class="chat-message ${senderClass}">
+                                ${msg.message}
+                                <span class="chat-metadata">${date} ${time} | ${msg.sender === 'user' ? 'אני' : 'מערכת'}</span>
+                            </div>
+                        `;
+                    }).join('');
+
+                    // גלילה אוטומטית למטה
+                    dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
+
                 }
                 
                 function createContainerCardElement(order) {
@@ -1059,6 +1198,57 @@
                     }
                 }
                 
+                // --- CHAT LOGIC ---
+
+                // *** פונקציה לשליחת הודעת צ'אט (מכל מקום) ועדכון היסטוריה ***
+                function sendChatMessage(messageContent) {
+                    const messageTrimmed = messageContent.trim();
+                    if (!messageTrimmed) return;
+
+                    // 1. הוסף הודעת משתמש להיסטוריה
+                    const userMessage = { sender: 'user', message: messageTrimmed, timestamp: new Date().toISOString() };
+                    clientState.chatHistory.push(userMessage);
+
+                    // 2. שמירת הנתונים בגלון
+                    // פונקציה מדומה לשליחת נתונים ל-Apps Script (גליון 'צ'אט')
+                    apiPost({ 
+                        action: 'logChatMessage', 
+                        clientId: clientState.id,
+                        clientName: clientState.name,
+                        message: messageTrimmed,
+                        sender: 'Client'
+                    }).catch(error => console.error("Failed to log chat message:", error));
+
+                    // 3. יצירת הודעת ווטסאפ (מעוצבת)
+                    const whatsappMessage = encodeURIComponent(
+                        `*💬 פניית צ'אט חדשה (מהאפליקציה) 📢*\n` +
+                        `*שם לקוח:* ${clientState.name}\n` +
+                        `*מספר לקוח:* ${clientState.id}\n` +
+                        `----------------------\n` +
+                        `*תוכן הפנייה:*\n${messageTrimmed}`
+                    );
+                    
+                    window.open(`https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${whatsappMessage}`, '_blank');
+                    showToast('✅ הפנייה נשלחה לווטסאפ של מחלקת הזמנות.', '📢');
+
+                    // 4. עדכון התצוגה
+                    renderChatPage();
+
+                    // *סימולציה לתשובת מערכת: נניח שהמערכת עונה אוטומטית או שהתשובה מגיעה מהגליון*
+                    // אם אתה רוצה לדמות תשובה מיידית:
+                    /*
+                    setTimeout(() => {
+                        const systemResponse = { sender: 'system', message: 'קיבלנו את פנייתך! נציג יחזור אליך בהקדם. תודה!', timestamp: new Date().toISOString() };
+                        clientState.chatHistory.push(systemResponse);
+                        clientState.hasUnreadChat = true;
+                        localStorage.setItem('saban_unread_chat', 'true');
+                        updateChatNotificationBadge();
+                        renderChatPage();
+                        showToast('✅ נשלחה לך תשובה חדשה בצ\'אט!', '🔔');
+                    }, 5000);
+                    */
+                }
+
                 // --- DYNAMIC FORM LOGIC ---
                 
                 function showFieldHint(elementId, isFocus) {
@@ -1444,7 +1634,7 @@
                     );
                     
                     // Replace 1234567890 with your actual receiving WhatsApp number
-                    window.open(`https://api.whatsapp.com/send?phone=9725XXXXXXXX&text=${whatsappMessage}`, '_blank'); 
+                    window.open(`https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${whatsappMessage}`, '_blank'); 
                     showToast('נפתח חלון וואטסאפ לשליחה. אנא אשר את ההודעה.', '📢');
                 }
 
@@ -1570,7 +1760,9 @@
                                 window.location.reload(); 
                                 break;
                             case 'new-order': openOrderModal('הזמנה חדשה'); break;
-                            case 'chat-template': document.getElementById('chat-message').value = actionElement.textContent; break;
+                            case 'chat-template': 
+                                document.getElementById('chat-message').value = actionElement.textContent.trim();
+                                break;
                             case 'refresh-data':
                                 if (clientState.id) {
                                     const btn = actionElement;
@@ -1644,7 +1836,7 @@
                             e.preventDefault();
                             const msgInput = document.getElementById('chat-message');
                             if (msgInput.value.trim()) {
-                                sendClientRequest('הודעת צאט', msgInput.value.trim());
+                                sendChatMessage(msgInput.value);
                                 msgInput.value = '';
                             }
                         }
