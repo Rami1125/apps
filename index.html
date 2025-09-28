@@ -312,6 +312,7 @@
 
         /** Caches DOM elements for faster access. */
         function cacheDomElements(){
+            console.log("[INIT] 1. Caching DOM elements.");
             Object.assign(dom, {
                 body: document.body,
                 appShell: document.querySelector('.app-shell'),
@@ -354,6 +355,7 @@
          * @returns {Promise<object>} The JSON response data.
          */
         async function apiPost(body) {
+            console.log(`[API] Sending POST request for action: ${body.action}`);
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds timeout
             try {
@@ -378,17 +380,20 @@
                 
                 // Check if response is malformed HTML (common Apps Script error)
                 if (textResponse.trim().startsWith('<')) {
+                    console.error("[API] Received HTML instead of JSON. Check server permissions/publishing.");
                     throw new Error("Received HTML response instead of JSON. Check script URL or permissions.");
                 }
                 
                 const data = JSON.parse(textResponse);
+                console.log(`[API] Received successful response for ${body.action}:`, data);
+
                 if (data.status === 'error') {
                     throw new Error(data.message || "Unknown server error.");
                 }
                 return data;
             } catch(error) {
                 clearTimeout(timeoutId);
-                console.error("API Post Error:", error);
+                console.error(`[API] Error during ${body.action}:`, error);
                 throw error;
             }
         }
@@ -421,19 +426,23 @@
         // --- App Lifecycle and Data Loading ---
         
         function initApp() {
+            console.log("[INIT] 0. Starting application init.");
             cacheDomElements();
             updateClock();
             setInterval(updateClock, 1000);
             
             const urlParams = new URLSearchParams(window.location.search);
             const storedClientId = urlParams.get('clientId') || localStorage.getItem('saban_client_id');
-
+            
+            // Check if there is a client ID stored locally or in URL
             if (storedClientId) {
+                 console.log(`[INIT] Found Client ID: ${storedClientId}. Attempting auto-login.`);
                  dom.splashScreen.classList.remove('hidden');
                  dom.appShell.style.display = 'flex'; // Prepare shell
                  dom.splashMessage.textContent = 'מתחבר למערכת...';
                  loadClientData(storedClientId);
             } else {
+                 console.log("[INIT] No Client ID found. Prompting for login.");
                  dom.splashScreen.style.display = 'none';
                  promptForClientId();
             }
@@ -441,6 +450,7 @@
 
         async function loadClientData(clientId) {
              dom.splashMessage.textContent = 'מאמת לקוח...';
+             console.log(`[AUTH] Attempting login for ID: ${clientId}`);
              let userData = null;
              
              try {
@@ -458,6 +468,7 @@
                 state.projects = getProjectsFromUserData(userData);
                 state.selectedProject = state.projects[0];
                 localStorage.setItem('saban_client_id', state.clientId);
+                console.log(`[AUTH] Login successful for: ${state.clientName}`);
                 
                 // 3. Load catalog and orders concurrently
                 dom.splashMessage.textContent = 'טוען קטלוג והזמנות...';
@@ -473,7 +484,7 @@
                 renderAllPages();
                 
              } catch (error) {
-                 console.error("Failed to load client data:", error);
+                 console.error("[AUTH] Login/Data load failed:", error);
                  const errorMsg = error.message.includes("Error:") ? error.message.split('Error:')[1].trim() : error.message;
                  
                  // Fallback for failed login
@@ -522,13 +533,13 @@
                         "יח' במשטח": parseFloat(p["standardQuantityPerUnit"]) || 1,
                         "בסיס": p["baseUnit"] || 'יח\'',
                     }));
-                    console.log(`Catalog loaded successfully: ${state.productCatalog.length} items.`);
+                    console.log(`[DATA] Catalog loaded successfully: ${state.productCatalog.length} items.`);
                 } else {
-                    console.warn("API did not return a successful catalog. Using empty catalog.", data.message);
+                    console.warn("[DATA] API did not return a successful catalog. Using empty catalog.", data.message);
                     state.productCatalog = [];
                 }
             } catch (error) {
-                console.error("Error fetching product catalog:", error);
+                console.error("[DATA] Error fetching product catalog:", error);
                 // Allow app to continue with an empty catalog
                 state.productCatalog = [];
             }
@@ -547,12 +558,12 @@
                              if (a.סטטוס !== 'בדרך' && b.סטטוס === 'בדרך') return 1;
                              return new Date(a['תאריך קליטה'] || a['תאריך הזמנה']) - new Date(b['תאריך קליטה'] || b['תאריך הזמנה']);
                         });
-                    console.log(`Loaded ${state.orders.length} active orders.`);
+                    console.log(`[DATA] Loaded ${state.orders.length} active orders.`);
                 } else {
                     state.orders = [];
                 }
             } catch(error) {
-                console.error("Error loading client orders:", error);
+                console.error("[DATA] Error loading client orders:", error);
                 state.orders = [];
             }
         }
@@ -1004,9 +1015,11 @@
                 
                 items: state.order.items
             };
+            console.log("[SUBMIT] Final Order Data:", orderData);
 
             try {
                  const result = await apiPost({ action: 'submitMaterialsOrder', order: orderData });
+                 console.log("[SUBMIT] Server response:", result);
                  showToast("ההזמנה נשמרה בגיליון! פותח וואטסאפ...", '💾', 3000);
                  
                  closeModal();
@@ -1038,6 +1051,7 @@
         // --- Event Listener Setup ---
 
         function setupEventListeners() {
+            console.log("[INIT] 3. Setting up event listeners.");
             dom.body.addEventListener('click', (e) => {
                 const actionElement = e.target.closest('[data-action]');
                 if (!actionElement) {
@@ -1048,6 +1062,7 @@
                 };
 
                 const action = actionElement.dataset.action;
+                console.log(`[CLICK] Action triggered: ${action}`);
                 switch(action) {
                     case 'navigate': navigateTo(actionElement.dataset.page); break;
                     case 'toggle-profile': dom.profileContainer.classList.toggle('active'); break;
@@ -1091,8 +1106,8 @@
         }
 
         // Expose global functions needed by inline HTML attributes
-        window.updateItemQuantity = (e) => updateItemQuantity(e.target);
-        window.removeItemFromOrder = (index) => removeItemFromOrder(index);
+        window.updateItemQuantity = updateItemQuantity;
+        window.removeItemFromOrder = removeItemFromOrder;
 
 
         initApp();
