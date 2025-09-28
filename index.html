@@ -203,7 +203,7 @@
             
             <div class="flex border-b border-border text-xs md:text-base">
                 <div id="step-1" class="step-indicator flex-1 p-4 text-center border-b-4 step-active"><strong>שלב 1:</strong> פרטי אספקה</div>
-                <div id="step-2" class="step-indicator flex-1 p-4 text-center border-b-4 border-transparent text-text-muted"><strong>שלב 2:</strong> בחירת מוצרים</div>
+                <div id="step-2" class="step-1 indicator flex-1 p-4 text-center border-b-4 border-transparent text-text-muted"><strong>שלב 2:</strong> בחירת מוצרים</div>
                 <div id="step-3" class="step-indicator flex-1 p-4 text-center border-b-4 border-transparent text-text-muted"><strong>שלב 3:</strong> סיכום ואישור</div>
             </div>
 
@@ -746,7 +746,7 @@
         // --- Forms and Modals ---
 
         function promptForClientId() {
-            // ... (Login modal logic)
+            console.log("[LOGIN_PROMPT] Displaying login modal.");
              dom.modalContainer.innerHTML = `<div class="modal-content popup-card bg-card rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="text-xl font-bold mb-4">ברוכים הבאים</h3><p class="text-text-light mb-5">כדי להתחבר, אנא הזן מספר לקוח.</p><form id="login-form"><input type="text" id="login-identifier" placeholder="מספר לקוח" required class="form-input w-full mb-4"><button type="submit" class="btn-primary w-full py-2 rounded-lg font-bold">התחבר</button></form></div>`;
              dom.modalContainer.classList.add('show');
             
