@@ -4,115 +4,193 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>אזור אישי - ח.סבן</title>
-    <meta name="theme-color" content="#0b72b9"/>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="theme-color" content="#ffffff"/>
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
+    <link rel="icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
+
+    <!-- Fonts and Libraries -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
-
     <style>
         :root {
-            --brand: #0b72b9; --brand-light: #e3f2fd; --accent: #ff9f1c; --bg: #f4f7f9; --card: #ffffff;
+            --brand: #0b72b9; --accent: #ff9f1c; --bg: #f0f2f5; --card: #ffffff;
             --text-dark: #1a202c; --text-light: #4a5568; --text-muted: #718096;
             --border: #e2e8f0; --success: #38a169; --warning: #dd6b20; --danger: #e53e3e;
-            --radius-lg: 16px; --radius-md: 12px; --radius-sm: 8px;
-            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            --transition-speed: 0.3s;
+            --radius: 16px; --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             --page-transition-duration: 0.4s;
         }
 
-        /* Utility classes */
-        .btn-primary { background-color: var(--brand); color: white; transition: background-color var(--transition-speed); }
-        .btn-primary:hover { background-color: #085a94; }
-        .btn-secondary { background-color: var(--card); color: var(--brand); border: 2px solid var(--brand); transition: all var(--transition-speed); }
-        .btn-secondary:hover { background-color: var(--brand); color: white; }
-        .form-input { border: 2px solid var(--border); transition: all var(--transition-speed); border-radius: var(--radius-md); padding: 10px; }
-        .form-input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(11, 114, 185, 0.2); }
-        .step-active { border-color: var(--brand); color: var(--brand); font-weight: 700; background-color: var(--brand-light); }
-        
-        /* Animations */
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes popIn { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        @keyframes pulse-light { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-        /* General Layout */
+        @keyframes logoPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes subtle-pulse { 0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(11, 114, 185, 0.3); } 70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(11, 114, 185, 0); } 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(11, 114, 185, 0); } }
+        @keyframes overdue-pulse { 0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.4); } 70% { box-shadow: 0 0 0 12px rgba(229, 62, 62, 0); } 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); } }
+        @keyframes truck-drive { 0% { transform: translateX(20px); } 100% { transform: translateX(-20px); } }
+        @keyframes siren-blink { 0%, 100% { background-color: #ffc107; box-shadow: 0 0 5px #ffc107; } 50% { background-color: #ff9800; box-shadow: 0 0 15px #ff9800; } }
+        
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        html, body { height: 100%; overflow: hidden; background-color: var(--bg); font-family: 'Assistant', sans-serif; }
+        html, body { height: 100%; overflow: hidden; background-color: var(--bg); }
+        body { font-family: 'Assistant', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; overscroll-behavior-y: contain; visibility: hidden; }
         body.loaded { visibility: visible; }
-        body { color: var(--text-dark); display: flex; flex-direction: column; overscroll-behavior-y: contain; visibility: hidden; }
 
         .app-shell { display: flex; flex-direction: column; height: 100%; }
         .app-header { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; background-color: var(--card); border-bottom: 1px solid var(--border); position: relative; z-index: 10; }
         .app-container { flex-grow: 1; overflow: hidden; position: relative; }
-        .bottom-nav { flex-shrink: 0; position: fixed; bottom: 0; left: 0; right: 0; height: 75px; background-color: var(--card); display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1000; }
-        
-        .page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; padding: 20px 15px 95px 15px; background-color: var(--bg); visibility: hidden; opacity: 0; transition: transform var(--page-transition-duration) ease, opacity var(--page-transition-duration) ease; }
-        .page.active { visibility: visible; opacity: 1; transform: translateX(0); z-index: 5;}
-        .page-title { font-size: 28px; font-weight: 700; margin-bottom: 20px; animation: fadeIn 0.5s ease-out forwards; }
+        .bottom-nav { flex-shrink: 0; position: fixed; bottom: 0; left: 0; right: 0; height: 80px; background-color: var(--card); display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1000; }
 
-        .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 12px; border: none; background: transparent; cursor: pointer; transition: color 0.2s, transform 0.2s;}
+        .page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow-y: auto; padding: 20px 15px 120px 15px; background-color: var(--bg); visibility: hidden; opacity: 0; transition: transform var(--page-transition-duration) ease, opacity var(--page-transition-duration) ease; }
+        .page.active { visibility: visible; opacity: 1; transform: translateX(0); z-index: 5;}
+        .page.exit-to-left { transform: translateX(-30px); opacity: 0; }
+        .page.exit-to-right { transform: translateX(30px); opacity: 0; }
+        .page.enter-from-left { transform: translateX(-30px); }
+        .page.enter-from-right { transform: translateX(30px); }
+        .page-title { font-size: 28px; font-weight: 700; margin-bottom: 20px; animation: fadeIn 0.5s ease-out forwards; }
+        
+        .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--text-muted); text-decoration: none; font-weight: 600; font-size: 14px; border: none; background: transparent; cursor: pointer; transition: color 0.2s, transform 0.2s;}
         .nav-btn.active { color: var(--brand); }
-        .nav-btn svg { width: 24px; height: 24px; pointer-events: none; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .nav-btn:active svg { transform: scale(1.2); }
+        .nav-btn svg { width: 28px; height: 28px; pointer-events: none; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        .card { background-color: var(--card); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid var(--border); animation: popIn 0.5s ease-out forwards; overflow: hidden; }
+        .btn { background: var(--brand); color: white; border: none; padding: 12px 18px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        .btn.secondary { background-color: var(--bg); color: var(--text-dark); border: 1px solid var(--border); }
         
-        .card { background-color: var(--card); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow); margin-bottom: 20px; border: 1px solid var(--border); animation: popIn 0.5s ease-out forwards; overflow: hidden; }
+        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s; backdrop-filter: blur(5px); }
+        .modal-overlay.show { opacity: 1; visibility: visible; }
+        .modal-content { background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.2); padding: 25px; border-radius: var(--radius); width: 90%; max-width: 500px; animation: popIn 0.3s; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); }
+        .form-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 16px; background-color: #f7f7f7; }
+
+        #toast-container { position: fixed; top: 20px; left: 15px; right: 15px; z-index: 4000; display: flex; flex-direction: column; gap: 10px; align-items: center;}
+        .toast { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 400px; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); color: var(--text-dark); padding: 14px 22px; border-radius: var(--radius); font-weight: 600; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border: 1px solid rgba(255, 255, 255, 0.3); opacity: 0; transform: translateY(-20px); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast .toast-icon { font-size: 24px; animation: popIn 0.5s; }
+        .toast.show { opacity: 1; transform: translateY(0); }
         
-        /* Status Cube Specific Styling */
-        .status-cube {
-            position: relative;
-            background: linear-gradient(135deg, var(--card) 60%, var(--brand-light) 100%);
-            border-left: 5px solid var(--brand);
-            padding: 20px;
-        }
-        .status-cube.status-waiting {
-             border-left-color: var(--accent);
-        }
-        .status-cube.status-waiting .fade-on-waiting {
-            opacity: 0.4;
-            transition: opacity 0.5s;
-        }
-        .status-cube .status-button {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            padding: 8px 12px;
-            border-radius: 9999px;
-            font-size: 13px;
-            font-weight: 700;
+        #splash-screen { position: fixed; inset: 0; z-index: 9999; background-color: #ffffff; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.5s ease, visibility 0.5s ease; }
+        #splash-logo { width: 120px; height: 120px; border-radius: 50%; display: flex; justify-content: center; align-items: center; animation: logoPulse 2s infinite ease-in-out; }
+        .splash-loader { width: 40px; height: 40px; border: 4px solid rgba(11, 114, 185, 0.2); border-top-color: var(--brand); border-radius: 50%; animation: spin 1s linear infinite; margin-top: 20px; opacity: 0; transition: opacity 0.3s; }
+        #splash-screen.loading .splash-loader { opacity: 1; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .container-card { position: relative; }
+        .container-card.overdue { border-color: var(--danger); animation: overdue-pulse 2.5s infinite; }
+        .overdue-badge { position: absolute; top: -10px; left: -10px; background-color: var(--danger); color: white; padding: 4px 10px; font-size: 12px; font-weight: 700; border-radius: 12px; }
+        .container-card .progress-bar { width: 100%; height: 8px; background-color: var(--border); border-radius: 4px; overflow: hidden; margin: 15px 0; }
+        .container-card .progress-bar-inner { height: 100%; background-color: var(--brand); border-radius: 4px; transition: width 0.8s ease-out; }
+        .container-card.overdue .progress-bar-inner { background-color: var(--danger); }
+        .mini-map-container { border-radius: 12px; border: 1px solid var(--border); height: 150px; width: 100%; margin-top: 15px; background-color: #eee; }
+        .leaflet-control-zoom, .leaflet-control-attribution { display: none !important; }
+
+        .help-fab { position: fixed; bottom: 100px; left: 20px; width: 50px; height: 50px; background-color: var(--accent); color: white; border-radius: 50%; border: none; font-size: 24px; font-weight: bold; box-shadow: var(--shadow); z-index: 1001; cursor: pointer; animation: popIn 0.5s 2s ease-out backwards; }
+        .help-modal { position: fixed; inset: 0; background: var(--bg); z-index: 3000; transform: translateY(100%); transition: transform 0.4s ease-out; display: flex; flex-direction: column;}
+        .help-modal.show { transform: translateY(0); }
+        .help-header { padding: 15px; text-align: center; position: relative; background: var(--card); }
+        .help-close { position: absolute; top: 10px; left: 15px; font-size: 24px; cursor: pointer; border: none; background: none;}
+        .install-guide-icon { width: 40px; height: 40px; margin: 0 auto 10px auto; display: block; }
+        
+        .request-history { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px; }
+        .request-history-item { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+        
+        .profile-container { position: relative; cursor: pointer; }
+        .profile-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); transition: transform 0.2s; }
+        .logout-popup { position: absolute; top: 50px; left: 0; background: var(--card); border-radius: 10px; box-shadow: var(--shadow); padding: 5px; opacity: 0; visibility: hidden; transition: opacity 0.2s, transform 0.2s; transform: translateY(10px); z-index: 10; }
+        .profile-container.active .logout-popup { opacity: 1; visibility: visible; transform: translateY(0); }
+        .logout-btn { background: none; border: none; padding: 8px 12px; font-weight: 600; color: var(--danger); display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
+        #history-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .filter-btn { background-color: var(--card); color: var(--text-dark); border: 1px solid var(--border); padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
+        .filter-btn.active { background-color: var(--brand); color: white; border-color: var(--brand); font-weight: 700; }
+        .history-table { width: 100%; border-collapse: collapse; }
+        .history-table th { text-align: right; padding: 12px; border-bottom: 2px solid var(--brand); font-size: 14px; }
+        .history-table td { padding: 14px 12px; border-bottom: 1px solid var(--border); }
+        .history-row { cursor: pointer; transition: background-color 0.2s; border-right: 4px solid transparent; }
+        .history-row:hover { background-color: #f7fafc; }
+        .history-row[data-action-type="החלפה"] { border-right-color: var(--accent); }
+        .history-row[data-action-type="הורדה"] { border-right-color: var(--success); }
+        .history-row[data-action-type="פינוי"] { border-right-color: var(--danger); }
+        
+        .eta-card { position: relative; overflow: hidden; padding: 15px; text-align: center;}
+        .eta-card.active { animation: subtle-pulse 2s infinite; }
+        .eta-road { width: 100%; height: 4px; background: var(--border); border-radius: 2px; margin-top: 15px; position: relative; }
+        .eta-progress { height: 100%; background: var(--brand); border-radius: 2px; position: absolute; right: 0; top: 0; transition: width 1s linear; }
+        .eta-truck { font-size: 30px; position: absolute; top: -20px; transform: translateX(50%) scaleX(-1); transition: right 1s linear; }
+        .eta-truck.static-truck { color: #ccc; }
+        .siren { width: 8px; height: 8px; border-radius: 50%; position: absolute; top: -5px; left: 12px; animation: siren-blink 1s infinite; }
+        
+        .header-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 5px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s, color 0.2s;
         }
-        .status-cube .status-button.waiting {
-            background-color: var(--accent);
-            color: white;
-            animation: pulse-light 1.5s infinite;
+        .header-btn:hover {
+            color: var(--text-dark);
         }
+        .header-btn:active {
+            background-color: var(--border);
+        }
+        
+        /* סגנון לטופס הזמנת חומרים חדש */
+        .materials-form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        .materials-form-grid .form-group { margin-bottom: 0; }
+        
+        /* --- Multi-Step Form Styles --- */
+        .step-indicator { 
+            border-bottom: 4px solid transparent; 
+            padding: 12px 0; 
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .step-active {
+            border-color: var(--brand) !important;
+            color: var(--brand);
+            font-weight: 700;
+        }
+        .form-step { 
+            animation: fadeIn 0.5s ease-out; 
+            min-height: 350px;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Forms/Modals */
-        .modal-overlay { position: fixed; inset: 0; background-color: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s; backdrop-filter: blur(5px); }
-        .modal-overlay.show { opacity: 1; visibility: visible; }
-        .popup-card { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .product-item.highlight { background-color: #fffbeb; border-left: 4px solid var(--accent); }
+        .product-item {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .product-item.unidentified {
+             border-left: 4px solid var(--accent);
+             background-color: #fff8f0; /* light orange tint */
+        }
+        
     </style>
 </head>
-<body class="bg-bg text-text-dark antialiased">
-
+<body>
     <div class="app-shell" style="display: none;">
-        <!-- Header -->
         <header class="app-header">
             <div style="display: flex; align-items: center; gap: 10px;">
-                 <button class="header-btn" data-action="refresh-data" aria-label="רענן נתונים" style="padding: 5px;">
+                <button class="header-btn" data-action="refresh-data" aria-label="רענן נתונים">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                 </button>
-                <div id="profile-container" class="profile-container cursor-pointer" data-action="toggle-profile">
-                    <img id="profile-avatar" src="" alt="Profile" class="w-10 h-10 rounded-full border-2 border-border">
-                    <div class="logout-popup absolute top-12 left-0 bg-card rounded-xl shadow-xl p-2 opacity-0 invisible transition-all duration-200" style="z-index: 10;">
-                        <button data-action="logout" class="flex items-center gap-2 p-2 font-semibold text-danger bg-none border-none cursor-pointer">
+                <div id="profile-container" class="profile-container" data-action="toggle-profile">
+                    <img id="profile-avatar" src="" alt="Profile" class="profile-avatar">
+                    <div class="logout-popup">
+                        <button data-action="logout" class="logout-btn">
                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/><path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/></svg>
                             <span>התנתק</span>
                         </button>
@@ -127,54 +205,131 @@
         </header>
 
         <main class="app-container" id="app-container">
-            <!-- page-containers is now the HOME page -->
-            <div id="page-containers" class="page active">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <!-- עמוד הבית (דאשבורד, נשאר לשמירה על גמישות) -->
+            <div id="page-home" class="page">
+                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
                     <h1 class="page-title" id="greeting" style="margin-bottom: 0;"></h1>
-                    <button class="btn-primary py-2 px-4 rounded-lg font-bold flex items-center gap-1" data-action="new-order-menu">
-                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg> הזמן חדשה
+                    <!-- כפתור הזמנה חדשה הועבר לדף חומרי בניין -->
+                    <button class="btn" data-action="navigate" data-page="page-materials">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg> הזמן חומרים
                     </button>
                 </div>
-                
-                <!-- Status Cube Container (ETA / Waiting) -->
-                <div id="status-cube-container"></div>
-
-                <!-- Active Containers List -->
-                <h2 class="text-xl font-bold mt-6 mb-4">המכולות הפעילות שלי</h2>
-                <div id="containers-list">
-                    <div class="card text-center text-text-muted">טוען מכולות...</div>
-                </div>
+                <div id="eta-card-container"></div>
+                <div id="active-orders-container"></div>
             </div>
-
+            
+            <!-- המכולות שלי (כעת דף הבית הראשי) -->
+            <div id="page-containers" class="page active">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                    <h1 class="page-title" id="containers-page-title">המכולות שלי</h1>
+                </div>
+                <div id="containers-list"></div>
+            </div>
+            
+            <!-- דף הזמנת חומרי בניין חדש -->
             <div id="page-materials" class="page">
-                <h1 class="page-title">הזמנת חומרי בניין</h1>
-                <div id="materials-form-container">
-                     <!-- Form steps will be rendered here -->
-                     <div class="card text-center text-text-muted">לחץ על 'הזמן חדשה' למטה</div>
-                </div>
+                 <h1 class="page-title">הזמנת חומרי בניין</h1>
+                 <div class="card">
+                    <p style="color: var(--text-light); margin-bottom: 20px;">אנא מלא את פרטי ההזמנה ושליח אותה לטיפול מיידי.</p>
+                    <div id="materials-form-multi-step">
+                         <div class="flex border-b border-border mb-6">
+                            <div id="step-indicator-1" class="step-indicator flex-1 text-center step-active"><strong>1.</strong> פרטי אספקה</div>
+                            <div id="step-indicator-2" class="step-indicator flex-1 text-center"><strong>2.</strong> בחירת מוצרים</div>
+                            <div id="step-indicator-3" class="step-indicator flex-1 text-center"><strong>3.</strong> סיכום ואישור</div>
+                        </div>
+
+                        <!-- הטופס החדש, מחולק לשלבים -->
+                        <form id="materials-order-form">
+                            <!-- שלב 1: פרטי אספקה -->
+                            <div id="form-step-1" class="form-step">
+                                <div class="materials-form-grid">
+                                    <div class="form-group">
+                                        <label for="deliveryAddress" style="font-weight: 600;">כתובת אספקה</label>
+                                        <input type="text" id="deliveryAddress" class="form-input" placeholder="רחוב ומספר בית" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="deliveryDate" style="font-weight: 600;">תאריך אספקה מבוקש</label>
+                                        <input type="date" id="deliveryDate" class="form-input" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="contactName" style="font-weight: 600;">איש קשר</label>
+                                        <input type="text" id="contactName" class="form-input" placeholder="שם איש קשר באתר" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="contactPhone" style="font-weight: 600;">טלפון איש קשר</label>
+                                        <input type="tel" id="contactPhone" class="form-input" placeholder="05X-XXXXXXX" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="transportType" style="font-weight: 600;">סוג הובלה</label>
+                                        <select id="transportType" class="form-input" required>
+                                            <option value="פריקה ידנית">פריקה ידנית</option>
+                                            <option value="מנוף 10 מטר">מנוף 10 מטר</option>
+                                            <option value="מנוף 15 מטר">מנוף 15 מטר</option>
+                                            <option value="מנוף 20 מטר">מנוף 20 מטר</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- שלב 2: בחירת מוצרים -->
+                            <div id="form-step-2" class="form-step hidden">
+                                <div class="relative mb-4">
+                                    <input type="text" id="product-search" class="form-input p-3 pl-10" placeholder="חפש מוצר (שם/מק''ט) או הדבק רשימה (מוצר כמות)...">
+                                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
+                                </div>
+                                <div id="product-suggestions" class="bg-white border border-border rounded-md max-h-48 overflow-y-auto mb-4"></div>
+                                <div id="order-items-container" class="space-y-3 min-h-[150px]">
+                                    <p class="text-center text-text-muted">הוסף מוצרים לבחירתך</p>
+                                </div>
+                            </div>
+
+                            <!-- שלב 3: סיכום ואישור -->
+                            <div id="form-step-3" class="form-step hidden">
+                                <div class="bg-gray-50 p-6 rounded-lg border border-border">
+                                    <h3 class="text-xl font-bold mb-4 border-b pb-2">סיכום פרטי אספקה</h3>
+                                    <div id="summary-details" class="space-y-3 text-text-light"></div>
+                                    <h3 class="text-xl font-bold mt-6 mb-4 border-b pb-2">פריטים להזמנה</h3>
+                                    <div id="summary-items" class="mt-4 pt-4 space-y-2"></div>
+                                    <textarea id="deliveryNotes" class="form-input w-full mt-6" rows="3" placeholder="הערות לנהג / פריקה... (חובה למלא אם יש דגשים)" name="deliveryNotes"></textarea>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- לחצני ניווט טופס -->
+                    <div class="flex justify-between items-center pt-4 border-t">
+                        <button type="button" id="form-back-btn" class="btn secondary" data-step-action="-1" style="visibility: hidden;">חזור</button>
+                        <button type="button" id="form-next-btn" class="btn" data-step-action="1">הבא</button>
+                    </div>
+                 </div>
             </div>
 
+            <!-- עמוד היסטוריה -->
             <div id="page-history" class="page"><h1 class="page-title">היסטוריית הזמנות</h1><div id="history-content"></div></div>
+            <!-- עמוד צור קשר -->
             <div id="page-chat" class="page"><h1 class="page-title">צור קשר</h1><div id="chat-content" class="card"></div></div>
         </main>
         
         <nav class="bottom-nav">
-            <!-- Containers / Home -->
+            <!-- 1. דף ראשי למכולות (המכולות שלי) -->
             <button class="nav-btn active" data-action="navigate" data-page="page-containers">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8.29V15.7a2 2 0 0 1-1.82 2H4.82A2 2 0 0 1 3 15.71V8.29a2 2 0 0 1 .45-1.28L8 2.29a2 2 0 0 1 1.45-.7a2 2 0 0 1 1.45-.7l4.55 4.72a2 2 0 0 1 .45 1.28Z"></path><path d="M12 17.71V12"></path></svg>
                 <span>דף הבית</span>
             </button>
             
-            <!-- Materials Order -->
+            <!-- 2. מחלקת חומרי בניין (חדש) -->
             <button class="nav-btn" data-action="navigate" data-page="page-materials">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="22" height="18" rx="2" ry="2"></rect><line x1="7" y1="21" x2="7" y2="3"></line><line x1="17" y1="21" x2="17" y2="3"></line><line x1="1" y1="9" x2="23" y2="9"></line><line x1="1" y1="15" x2="23" y2="15"></line></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="3" width="7" height="7" rx="1"/><path d="M14 7h7"/></svg>
                 <span>חומרי בניין</span>
             </button>
-
+            
+            <!-- 3. היסטוריה -->
             <button class="nav-btn" data-action="navigate" data-page="page-history">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
-                 <span>היסטוריה</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                <span>היסטוריה</span>
             </button>
+            
+            <!-- 4. צ'אט -->
             <button class="nav-btn" data-action="navigate" data-page="page-chat">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 15-3-3-3 3"></path><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4"></path><path d="m3 9 3 3 3-3"></path></svg>
                 <span>צ'אט</span>
@@ -182,946 +337,989 @@
         </nav>
     </div>
 
-    <!-- Modals and Popups Container -->
-    <div id="modal-container" class="modal-overlay hidden">
-        <!-- Project Selector Popup -->
-        <div id="project-selector-popup" class="popup-card bg-card rounded-lg shadow-xl w-full max-w-md p-6 hidden">
-            <h2 class="text-xl font-bold mb-4 text-center">בחר פעולה עבור פרויקט</h2>
-            <p id="popup-project-name" class="text-center text-text-muted mb-6 font-semibold"></p>
-            <div id="project-options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <!-- Options loaded dynamically -->
-            </div>
-             <button data-action="close-modal" class="mt-6 w-full text-center text-sm text-text-muted hover:text-brand">סגור</button>
-        </div>
-
-        <!-- Building Materials Order Form (Multi-Step) -->
-        <div id="materials-order-form" class="popup-card bg-card rounded-lg shadow-xl w-full max-w-3xl h-[90vh] flex flex-col hidden">
-            <div class="p-6 border-b border-border">
-                <h2 class="text-2xl font-bold text-brand">הזמנת חומרי בניין</h2>
-                <p class="text-text-light">מלא את פרטי ההזמנה ב-3 שלבים פשוטים</p>
-            </div>
-            
-            <div class="flex border-b border-border text-xs md:text-base">
-                <div id="step-1" class="step-indicator flex-1 p-4 text-center border-b-4 step-active"><strong>שלב 1:</strong> פרטי אספקה</div>
-                <div id="step-2" class="step-1 indicator flex-1 p-4 text-center border-b-4 border-transparent text-text-muted"><strong>שלב 2:</strong> בחירת מוצרים</div>
-                <div id="step-3" class="step-indicator flex-1 p-4 text-center border-b-4 border-transparent text-text-muted"><strong>שלב 3:</strong> סיכום ואישור</div>
-            </div>
-
-            <div class="flex-grow overflow-y-auto p-6">
-                <div id="form-step-1" class="form-step space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="md:col-span-2">
-                             <label class="font-semibold" for="delivery-address">כתובת אספקה</label>
-                             <input type="text" id="delivery-address" class="form-input w-full mt-1" placeholder="רחוב, עיר, מספר" data-hint="כתובת האספקה המדויקת של הפרויקט.">
-                        </div>
-                        <div>
-                            <label class="font-semibold" for="delivery-date">תאריך אספקה</label>
-                            <input type="date" id="delivery-date" class="form-input w-full mt-1" data-hint="תאריך יעד רצוי לאספקת החומרים.">
-                        </div>
-                        <div>
-                            <label class="font-semibold" for="delivery-window">חלון זמנים</label>
-                            <select id="delivery-window" class="form-input w-full mt-1" data-hint="העדפה לשעת האספקה (בוקר, צהריים, וכו').">
-                                <option value="06:30-10:00">בוקר (06:30 - 10:00)</option>
-                                <option value="10:00-13:00">צהריים (10:00 - 13:00)</option>
-                                <option value="13:00-16:00">אחר הצהריים (13:00 - 16:00)</option>
-                            </select>
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="font-semibold" for="transport-type">סוג הובלה</label>
-                            <select id="transport-type" class="form-input w-full mt-1" data-hint="סוג הרכב הנדרש: מנוף, פריקה ידנית וכד'.">
-                                <option value="פריקה ידנית">פריקה ידנית</option>
-                                <option value="הובלת מנוף 10 מטר">הובלת מנוף 10 מטר</option>
-                                <option value="הובלת מנוף 15 מטר">הובלת מנוף 15 מטר</option>
-                                <option value="עבודת מנוף לפי שעה">עבודת מנוף לפי שעה</option>
-                            </select>
-                        </div>
-                         <div class="md:col-span-2">
-                            <label class="font-semibold" for="contact-name">איש קשר באתר</label>
-                            <input type="text" id="contact-name" class="form-input w-full mt-1" placeholder="שם מלא" data-hint="שם איש הקשר שיהיה זמין באתר לקבלת ההזמנה.">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="font-semibold" for="contact-phone">טלפון איש קשר</label>
-                            <input type="tel" id="contact-phone" class="form-input w-full mt-1" placeholder="מספר טלפון" data-hint="מספר הטלפון של איש הקשר באתר.">
-                        </div>
-                    </div>
+    <button class="help-fab" data-action="help-fab" style="display: none;">?</button>
+    <div id="help-modal" class="help-modal">
+        <div class="help-header"><h2 style="margin:0;">מדריך למשתמש</h2><button data-action="help-close" class="help-close">&times;</button></div>
+        <div style="flex-grow: 1; padding: 20px; overflow-y: auto;">
+             <div class="card"><h3 style="color: var(--brand); margin-bottom: 10px;">ברוכים הבאים!</h3><p>האפליקציה מאפשרת לכם לנהל את המכולות וההזמנות שלכם בקלות ובמהירות.</p></div>
+             <div class="card"><h4>📦 המכולות שלי (דף הבית)</h4><p>כאן תראו את המכולות הפעילות שלכם, סטטוס שכירות וצפי הגעה של הובלה חדשה.</p></div>
+             <div class="card"><h4>🧱 חומרי בניין</h4><p>עמוד זה מאפשר לכם לבצע הזמנה חדשה ומפורטת של חומרים למשלוח.</p></div>
+             <div class="card"><h4>📈 היסטוריה</h4><p>צפו בכל ההזמנות שלכם, סננו לפי פרויקט, ולחצו על שורה לקבלת פרטים מלאים.</p></div>
+             <div class="card">
+                <h4>התקנה למסך הבית</h4>
+                <p style="margin-bottom: 15px;">להתקנת האפליקציה וחווית שימוש מלאה, בצעו את הפעולות הבאות:</p>
+                <div style="text-align: center;">
+                    <p><strong>באייפון (דפדפן ספארי):</strong></p>
+                    <p>לחצו על כפתור השיתוף <svg style="display: inline-block; vertical-align: middle;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg> ובחרו "הוסף למסך הבית".</p>
+                    <p style="margin-top: 10px;"><strong>באנדרואיד (דפדפן כרום):</strong></p>
+                    <p>לחצו על כפתור התפריט (שלוש נקודות) ובחרו "התקן אפליקציה" או "הוסף למסך הבית".</p>
                 </div>
-
-                <div id="form-step-2" class="form-step hidden">
-                    <div class="relative mb-4">
-                        <input type="text" id="product-search" class="form-input w-full p-3 pl-10" placeholder="הקלד שם מוצר, מק״ט, או הדבק רשימה..." data-hint="הקלד שם או מק'ט. לחץ ENTER או בחר מהרשימה להוספת מוצר.">
-                         <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
-                    </div>
-                    <div id="product-suggestions" class="bg-gray-50 border border-border rounded-md max-h-48 overflow-y-auto mb-4"></div>
-                    <h4 class="font-bold text-lg mb-2">פריטים בהזמנה (<span id="items-count">0</span>):</h4>
-                    <div id="order-items-container" class="space-y-3">
-                        <p class="text-center text-text-muted">המוצרים שתוסיף יופיעו כאן</p>
-                    </div>
-                </div>
-
-                <div id="form-step-3" class="form-step hidden">
-                     <div class="bg-gray-50 p-6 rounded-lg border border-border">
-                        <h3 class="text-xl font-bold mb-4 border-b pb-2">סיכום הזמנה</h3>
-                        <div id="summary-details" class="space-y-3 text-text-light"></div>
-                        <div id="summary-items" class="mt-4 pt-4 border-t space-y-2"></div>
-                        <textarea id="order-notes" class="form-input w-full mt-6" rows="3" placeholder="הערות להזמנה... (לדוגמה: לפרוק ליד השער)" data-hint="כל הערה חשובה לצוות האספקה או הנהג."></textarea>
-                    </div>
-                </div>
-            </div>
-
-            <div class="p-4 bg-gray-50 border-t flex justify-between items-center">
-                <button id="form-back-btn" class="btn-secondary py-2 px-5 rounded-md font-bold invisible">חזור</button>
-                <button id="form-next-btn" class="btn-primary py-2 px-5 rounded-md font-bold">הבא</button>
             </div>
         </div>
     </div>
     
-    <!-- Splash Screen / Loading -->
-    <div id="splash-screen" class="fixed inset-0 z-[9999] bg-white flex flex-col justify-center items-center transition-opacity duration-500">
-        <div class="w-24 h-24 rounded-full flex justify-center items-center" style="animation: pulse-light 2s infinite;">
-            <img src="https://i.postimg.cc/2SbDgD1B/1.png" alt="לוגו ח.סבן" class="w-full h-full object-cover rounded-full">
-        </div>
-        <div class="splash-loader w-10 h-10 border-4 border-brand-light border-t-brand rounded-full animate-spin mt-5"></div>
-        <p id="splash-message" class="text-sm text-text-muted mt-3">טוען נתונים...</p>
-    </div>
-
-    <!-- Toast Container (for messages/hints) -->
-    <div id="toast-container" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-[4000] flex flex-col gap-2 w-full max-w-sm"></div>
+    <div id="splash-screen"><div id="splash-logo"><img src="https://i.postimg.cc/2SbDgD1B/1.png" alt="לוגו ח.סבן" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;"></div><div class="splash-loader"></div></div>
+    <div id="toast-container"></div>
+    <div id="modal-container" class="modal-overlay"></div>
 
     <script>
     // Self-executing function to encapsulate the entire application logic
     (() => {
-        
-        // !!! ודא שהכתובת הזו מעודכנת ל-Deployment URL שלך !!!
-        const API_URL = "https://script.google.com/macros/s/AKfycbx07zliATi8KaNVWALPQugtzCsuJ1CojF_N8-6wUE3AKY18Lho66XZplGSf8v2xdaVf/exec";
-        
-        let state = {
-            clientId: null,
-            clientName: "אורח",
-            projects: [],
-            selectedProject: null,
-            productCatalog: [],
-            orders: [], // Combined: Containers & Materials
-            order: { items: [] } // Current new order being placed
-        };
-        
-        const dom = {};
-        let currentStep = 1;
-        let currentPageId = 'page-containers'; 
-
-        // --- Core Utility Functions ---
-
-        /** Caches DOM elements for faster access. */
-        function cacheDomElements(){
-            console.log("[INIT] 1. Caching DOM elements.");
-            Object.assign(dom, {
-                body: document.body,
-                appShell: document.querySelector('.app-shell'),
-                splashScreen: document.getElementById('splash-screen'),
-                splashMessage: document.getElementById('splash-message'),
-                pages: document.querySelectorAll('.page'),
-                navButtons: document.querySelectorAll('.nav-btn'),
-                modalContainer: document.getElementById('modal-container'),
-                toastContainer: document.getElementById('toast-container'),
+        // Using a try-catch block for the entire script to prevent app freeze on critical errors
+        try {
+            document.addEventListener('DOMContentLoaded', () => {
+                // *** חשוב מאוד: החלף בכתובת ה-Apps Script המפורסמת שלך ***
+                const API_URL = "https://script.google.com/macros/s/AKfycbx07zliATi8KaNVWALPQugtzCsuJ1CojF_N8-6wUE3AKY18Lho66XZplGSf8v2xdaVf/exec";
                 
-                // Header & UI
-                clientNameHeader: document.getElementById('client-name-header'),
-                profileContainer: document.getElementById('profile-container'),
-                profileAvatar: document.getElementById('profile-avatar'),
-                clock: document.getElementById('clock'),
-                date: document.getElementById('date'),
-                greeting: document.getElementById('greeting'),
+                let clientState = { id: null, name: null, avatar: null, orders: [], addresses: new Set(), currentHistoryFilter: 'all', productCatalog: [], materialOrder: { items: [], step: 1 } };
+                let currentPageId = 'page-containers'; // ברירת מחדל: דף המכולות
+                let mapInstances = {};
+                const dom = {};
 
-                // Containers Page
-                statusCubeContainer: document.getElementById('status-cube-container'),
-                containersList: document.getElementById('containers-list'),
-                
-                // Materials Form Elements
-                materialsOrderForm: document.getElementById('materials-order-form'),
-                stepIndicators: document.querySelectorAll('.step-indicator'),
-                formSteps: document.querySelectorAll('.form-step'),
-                formNextBtn: document.getElementById('form-next-btn'),
-                formBackBtn: document.getElementById('form-back-btn'),
-                productSearch: document.getElementById('product-search'),
-                productSuggestions: document.getElementById('product-suggestions'),
-                orderItemsContainer: document.getElementById('order-items-container'),
-                itemsCount: document.getElementById('items-count'),
-            });
-            dom.profileLogout = dom.profileContainer?.querySelector('.logout-popup');
-        }
-
-        /**
-         * Generic POST request to the Apps Script API.
-         * @param {object} body - The JSON payload to send.
-         * @returns {Promise<object>} The JSON response data.
-         */
-        async function apiPost(body) {
-            console.log(`[API] Sending POST request for action: ${body.action}`);
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds timeout
-            try {
-                const response = await fetch(API_URL, { 
-                    method: 'POST', 
-                    mode: 'cors', 
-                    body: JSON.stringify(body), 
-                    cache: 'no-cache', 
-                    headers: { 'Content-Type': 'text/plain' },
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                
-                if (response.status === 404) {
-                     throw new Error(`API Not Found (404). ודא שכתובת ה-Apps Script נכונה ומפורסמת.`);
-                }
-                if (!response.ok) {
-                    throw new Error(`HTTP Error: ${response.status}`);
-                }
-                
-                const textResponse = await response.text();
-                
-                // Check if response is malformed HTML (common Apps Script error)
-                if (textResponse.trim().startsWith('<')) {
-                    console.error("[API] Received HTML instead of JSON. Check server permissions/publishing.");
-                    throw new Error("Received HTML response instead of JSON. Check script URL or permissions.");
-                }
-                
-                const data = JSON.parse(textResponse);
-                console.log(`[API] Received successful response for ${body.action}:`, data);
-
-                if (data.status === 'error') {
-                    throw new Error(data.message || "Unknown server error.");
-                }
-                return data;
-            } catch(error) {
-                clearTimeout(timeoutId);
-                console.error(`[API] Error during ${body.action}:`, error);
-                throw error;
-            }
-        }
-        
-        /** Shows a temporary message toast. */
-        function showToast(message, icon = 'ℹ️', duration = 3000) {
-            const toast = document.createElement('div');
-            toast.className = `toast bg-white rounded-lg shadow-xl p-3 flex items-center gap-3`;
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-10px)';
-            toast.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-            toast.innerHTML = `<span style="font-size: 20px;">${icon}</span> <span class="font-semibold">${message}</span>`;
-            
-            dom.toastContainer.appendChild(toast);
-            
-            // Show
-            setTimeout(() => {
-                toast.style.opacity = '1';
-                toast.style.transform = 'translateY(0)';
-            }, 50);
-            
-            // Hide
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(-10px)';
-                toast.addEventListener('transitionend', () => toast.remove());
-            }, duration);
-        }
-
-        // --- App Lifecycle and Data Loading ---
-        
-        function initApp() {
-            console.log("[INIT] 0. Starting application init.");
-            
-            // AVOID ALL DOM MANIPULATION BEFORE CACHE
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            // FIX: Check for both 'clientId' (correct) and 'Clientid' (common typo)
-            const clientIdFromUrl = urlParams.get('clientId') || urlParams.get('Clientid');
-            const storedClientId = clientIdFromUrl || localStorage.getItem('saban_client_id');
-            
-            // Cache DOM elements now
-            cacheDomElements();
-            updateClock();
-            setInterval(updateClock, 1000);
-            
-            // Check if there is a client ID stored locally or in URL
-            if (storedClientId) {
-                 console.log(`[INIT] Found Client ID: ${storedClientId}. Attempting auto-login.`);
-                 dom.splashScreen.classList.remove('hidden');
-                 dom.appShell.style.display = 'flex'; // Prepare shell
-                 dom.splashMessage.textContent = 'מתחבר למערכת...';
-                 loadClientData(storedClientId);
-            } else {
-                 console.log("[INIT] No Client ID found. Prompting for login.");
-                 
-                 // FIX: Ensure promptForClientId is called only after DOM is ready
-                 setTimeout(() => {
-                    dom.splashScreen.style.display = 'none';
-                    promptForClientId();
-                 }, 100);
-            }
-        }
-
-        async function loadClientData(clientId) {
-             dom.splashMessage.textContent = 'מאמת לקוח...';
-             console.log(`[AUTH] Attempting login for ID: ${clientId}`);
-             let userData = null;
-             
-             try {
-                // 1. Login to get user details
-                const loginData = await apiPost({ action: 'login', customerId: clientId });
-                userData = loginData.user;
-                
-                if (!userData || !userData['שם לקוח']) {
-                     throw new Error("Server returned user data but missing key fields.");
-                }
-                
-                // 2. Update client state
-                state.clientId = String(userData['מספר לקוח']);
-                state.clientName = userData['שם לקוח'];
-                state.projects = getProjectsFromUserData(userData);
-                state.selectedProject = state.projects[0];
-                localStorage.setItem('saban_client_id', state.clientId);
-                console.log(`[AUTH] Login successful for: ${state.clientName}`);
-                
-                // 3. Load catalog and orders concurrently
-                dom.splashMessage.textContent = 'טוען קטלוג והזמנות...';
-                await Promise.all([
-                    loadProductCatalog(),
-                    loadClientOrders()
-                ]);
-
-                // 4. Finalize UI setup
-                await playSplashScreenAnimation();
-                document.body.classList.add('loaded');
-                setupEventListeners();
-                renderAllPages();
-                
-             } catch (error) {
-                 console.error("[AUTH] Login/Data load failed:", error);
-                 const errorMsg = error.message.includes("Error:") ? error.message.split('Error:')[1].trim() : error.message;
-                 
-                 // Fallback for failed login
-                 if (error.message.includes('מספר לקוח לא נמצא') || error.message.includes('מזהה לקוח לא התקבל')) {
-                     showToast("מספר לקוח לא קיים במערכת.", '❌', 5000);
-                 } else {
-                     showToast(`שגיאה בטעינת נתונים: ${errorMsg}`, '❌', 8000);
-                 }
-                 
-                 localStorage.removeItem('saban_client_id');
-                 dom.splashScreen.style.display = 'none';
-                 promptForClientId();
-            }
-        }
-
-        function getProjectsFromUserData(userData) {
-            // Logic to convert CSV rows (Project + Address) into unique projects list
-            const projectsMap = new Map();
-            
-            // Add the primary project/address from the first row
-            if (userData['פרוייקט'] && userData['כתובת']) {
-                projectsMap.set(userData['פרוייקט'], { 
-                    name: userData['פרוייקט'], 
-                    address: userData['כתובת'] 
-                });
-            }
-            
-            // Fallback mock project if none found (for development)
-            if (projectsMap.size === 0) {
-                 projectsMap.set('פרויקט ראשי', { name: 'פרויקט ראשי', address: 'הזן כתובת באתר' });
-            }
-            
-            return Array.from(projectsMap.values());
-        }
-
-        async function loadProductCatalog() {
-            try {
-                const data = await apiPost({ action: 'getProductCatalog' });
-                if (data.catalog && Array.isArray(data.catalog)) {
-                    // Normalize fields if necessary (e.g., convert '25 K.G' to 'ק"ג')
-                    state.productCatalog = data.catalog.map(p => ({
-                        ...p,
-                        "מק\"ט": p["מק\"ט"] || 'N/A',
-                        "שם מוצר": p["שם מוצר"] || 'מוצר ללא שם',
-                        "יחידת מידה": p["unitOfMeasure"] || 'יח\'',
-                        "יח' במשטח": parseFloat(p["standardQuantityPerUnit"]) || 1,
-                        "בסיס": p["baseUnit"] || 'יח\'',
-                    }));
-                    console.log(`[DATA] Catalog loaded successfully: ${state.productCatalog.length} items.`);
-                } else {
-                    console.warn("[DATA] API did not return a successful catalog. Using empty catalog.", data.message);
-                    state.productCatalog = [];
-                }
-            } catch (error) {
-                console.error("[DATA] Error fetching product catalog:", error);
-                // Allow app to continue with an empty catalog
-                state.productCatalog = [];
-            }
-        }
-        
-        async function loadClientOrders() {
-            try {
-                const data = await apiPost({ action: 'getClientOrders', customerId: state.clientId });
-                if (data.orders && Array.isArray(data.orders)) {
-                    // Combine and filter orders
-                    state.orders = data.orders
-                        .filter(o => o.סטטוס === 'חדשה' || o.סטטוס === 'פעילה' || o.סטטוס === 'בדרך')
-                        // Sort by Status (B'Derech first, then date)
-                        .sort((a, b) => {
-                             if (a.סטטוס === 'בדרך' && b.סטטוס !== 'בדרך') return -1;
-                             if (a.סטטוס !== 'בדרך' && b.סטטוס === 'בדרך') return 1;
-                             return new Date(a['תאריך קליטה'] || a['תאריך הזמנה']) - new Date(b['תאריך קליטה'] || b['תאריך הזמנה']);
-                        });
-                    console.log(`[DATA] Loaded ${state.orders.length} active orders.`);
-                } else {
-                    state.orders = [];
-                }
-            } catch(error) {
-                console.error("[DATA] Error loading client orders:", error);
-                state.orders = [];
-            }
-        }
-        
-        // --- UI Rendering ---
-
-        function updateClock() {
-            const now = new Date();
-            dom.clock.textContent = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-            dom.date.textContent = now.toLocaleDateString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit' });
-        }
-
-        async function playSplashScreenAnimation() {
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    dom.splashScreen.style.opacity = '0';
-                    dom.splashScreen.addEventListener('transitionend', () => {
+                function initApp() {
+                    document.body.classList.add('loaded');
+                    cacheDomElements();
+                    updateClock();
+                    setInterval(updateClock, 1000);
+                    
+                    const storedClientId = localStorage.getItem('saban_client_id');
+                    if (storedClientId) {
+                        dom.splashScreen.classList.add('loading');
+                        loadClientData(storedClientId);
+                        loadProductCatalog(); // Load catalog once
+                    } else {
                         dom.splashScreen.style.display = 'none';
-                        resolve();
-                    }, { once: true });
-                }, 500);
-            });
-        }
-        
-        function navigateTo(pageId, isInitial = false) {
-             if (!isInitial && currentPageId === pageId) return;
-            
-            // Remove selection class from old nav button
-            dom.navButtons.forEach(b => b.classList.remove('active'));
-            // Add selection class to new nav button
-            document.querySelector(`[data-page="${pageId}"]`)?.classList.add('active');
-            
-            // Find old and new pages for transition
-            const oldPage = document.getElementById(currentPageId);
-            const newPage = document.getElementById(pageId);
-            if (!newPage) return;
+                        promptForClientId();
+                    }
+                }
 
-            if (oldPage) oldPage.classList.remove('active');
-            newPage.classList.add('active');
-
-            currentPageId = pageId;
-        }
-
-        function renderAllPages() {
-            renderHeaderAndGreeting();
-            renderContainersPage(); // This is the new Home page
-            // renderMaterialsPage(); // Handled by openMaterialsOrder
-            // renderHistoryPage(); // To be implemented
-        }
-
-        function renderHeaderAndGreeting() {
-            const defaultAvatar = "https://img.icons8.com/?size=100&id=Ry7mumEprV9w&format=png&color=000000";
-            dom.clientNameHeader.textContent = state.clientName;
-            dom.profileAvatar.src = state.selectedProject?.avatarUrl || defaultAvatar;
-            const hour = new Date().getHours();
-            let greetingText = (hour < 12) ? "בוקר טוב" : (hour < 18) ? "צהריים טובים" : "ערב טוב";
-            dom.greeting.textContent = `${greetingText}, ${state.clientName.split(' ')[0]}`;
-        }
-        
-        function renderContainersPage() {
-            const container = dom.containersList;
-            container.innerHTML = '';
-            
-            // 1. Identify the most urgent order for the status cube
-            // This is the first order in the sorted list (B'Derech, then New/Active)
-            const urgentOrder = state.orders.length > 0 ? state.orders[0] : null;
-            
-            if (urgentOrder) {
-                dom.statusCubeContainer.innerHTML = createStatusCubeHTML(urgentOrder);
                 
-                // 2. Filter out the urgent order if it's a container (to avoid duplication below)
-                const remainingContainers = state.orders.filter(order => 
-                     order.type === 'Container' && order !== urgentOrder && order.סטטוס === 'פעילה'
-                );
+                function cacheDomElements(){
+                    Object.assign(dom, {
+                        body: document.body,
+                        appShell: document.querySelector('.app-shell'),
+                        splashScreen: document.getElementById('splash-screen'),
+                        pages: document.querySelectorAll('.page'),
+                        navButtons: document.querySelectorAll('.nav-btn'),
+                        modalContainer: document.getElementById('modal-container'),
+                        toastContainer: document.getElementById('toast-container'),
+                        activeOrdersContainer: document.getElementById('active-orders-container'),
+                        containersList: document.getElementById('containers-list'),
+                        etaCardContainer: document.getElementById('eta-card-container'),
+                        greeting: document.getElementById('greeting'),
+                        clientNameHeader: document.getElementById('client-name-header'),
+                        profileContainer: document.getElementById('profile-container'),
+                        profileAvatar: document.getElementById('profile-avatar'),
+                        clock: document.getElementById('clock'),
+                        date: document.getElementById('date'),
+                        helpFab: document.querySelector('.help-fab'),
+                        helpModal: document.getElementById('help-modal'),
+                        historyContent: document.getElementById('history-content'),
+                        chatContent: document.getElementById('chat-content'),
+                        // Elements for the new dynamic form
+                        materialsForm: document.getElementById('materials-order-form'),
+                        formSteps: document.querySelectorAll('.form-step'),
+                        // **FIX 2:** Check for existence
+                        stepIndicators: document.getElementById('materials-form-multi-step') ? document.querySelectorAll('.step-indicator') : [],
+                        formNextBtn: document.getElementById('form-next-btn'),
+                        formBackBtn: document.getElementById('form-back-btn'),
+                        productSearch: document.getElementById('product-search'),
+                        productSuggestions: document.getElementById('product-suggestions'),
+                        orderItemsContainer: document.getElementById('order-items-container'),
+                        summaryDetails: document.getElementById('summary-details'),
+                        summaryItems: document.getElementById('summary-items'),
+                    });
+                }
+                
+                // **UPDATED: Loads product catalog using POST request**
+                async function loadProductCatalog() {
+                    try {
+                        // משתמשים ב-apiPost כדי להפעיל את action=getProductCatalog ב-doPost
+                        const data = await apiPost({ action: 'getProductCatalog' });
 
-                if (remainingContainers.length > 0) {
-                     dom.containersList.previousElementSibling.textContent = 'מכולות נוספות באתר';
-                     remainingContainers.forEach(order => {
+                        if (data.status === 'success' && data.catalog) {
+                             // Renaming columns to match existing local structure for compatibility
+                            clientState.productCatalog = data.catalog.map(p => ({
+                                "שם מוצר": p["שם מוצר"],
+                                "מק\"ט": p["מק\"ט"],
+                                "יחידת מידה": p.unitOfMeasure,
+                                "יח' במשטח": p.standardQuantityPerUnit,
+                                "בסיס": p.baseUnit,
+                            }));
+                             console.log(`Product catalog loaded successfully (${clientState.productCatalog.length} items).`);
+                        } else {
+                            console.warn("API did not return a successful catalog. Using mock or empty catalog.", data.message);
+                            clientState.productCatalog = []; 
+                        }
+                    } catch (error) {
+                        console.error("Error fetching product catalog:", error);
+                        clientState.productCatalog = [];
+                        showToast("שגיאה בטעינת קטלוג המוצרים. חפש לפי טקסט חופשי.", '⚠️');
+                    }
+                }
+
+                async function loadClientData(clientId, isRefresh = false) {
+                    try {
+                        // *** התיקון כאן: שינוי identifier ל-customerId כדי להתאים ל-Apps Script ***
+                        const data = await apiPost({ action: 'login', customerId: clientId });
+
+                        if (data.status === 'error' || !data.user || !data.user["שם לקוח"]) {
+                             // This catches 'not_found' or general server errors
+                             throw new Error(data.message || "Login failed or client not found.");
+                        }
+                        
+                        const clientName = data.user["שם לקוח"];
+                        
+                        // Mock Orders: Should be replaced by a dedicated API call to get all client orders
+                        const mockOrders = [
+                            { 'תעודה': 1234, 'פרוייקט': data.user?.["פרוייקט"] || 'העם הצרפתי', 'כתובת': data.user?.["כתובת"] || 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'פעיל', 'מכולה ירדה': 'כן', 'סוג פעולה': 'הורדה', 'שם נהג': 'יוסי', 'זמן הגעה משוער': '11:30', requests: [{ type: 'פינוי', date: '01/09' }] },
+                            { 'תעודה': 1236, 'פרוייקט': 'העם הצרפתי', 'כתובת': 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date().toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'בדרך', 'מכולה ירדה': '', 'סוג פעולה': 'הורדה', 'שם נהג': 'דוד', 'זמן הגעה משוער': '14:00', requests: [] },
+                        ];
+
+                        clientState = { 
+                            ...clientState, 
+                            id: data.user["מספר לקוח"], 
+                            name: clientName, 
+                            avatar: data.user["תמונת פרופיל"], 
+                            orders: mockOrders, 
+                            addresses: new Set(mockOrders.map(o => o['כתובת']).filter(Boolean)) 
+                        };
+                        localStorage.setItem('saban_client_id', clientState.id);
+                        
+                        if (!isRefresh) {
+                            await playSplashScreenAnimation();
+                            dom.appShell.style.display = 'flex';
+                            setupEventListeners();
+                            navigateTo('page-containers', true); // כעת המכולות דף הבית
+                            renderAllPages();
+                            dom.helpFab.style.display = 'block';
+                        } else {
+                            renderHeaderAndGreeting();
+                            renderContainersPage(); // מרנדר את המכולות (דף הבית החדש)
+                            renderHistoryPage(); 
+                            renderHomePage(); // מרנדר את דף הבית המקורי כדאשבורד פנימי
+                        }
+
+                    } catch (error) {
+                        console.error("Failed to load client data:", error);
+                        localStorage.removeItem('saban_client_id');
+                        dom.splashScreen.classList.remove('loading');
+                        dom.splashScreen.style.display = 'none';
+                        promptForClientId();
+                        showToast(`שגיאה בטעינת נתונים: ${error.message}. נסה שוב.`, '❌');
+                    }
+                }
+                
+                async function apiPost(body) {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
+                    try {
+                        const response = await fetch(API_URL, { method: 'POST', mode: 'cors', body: JSON.stringify(body), cache: 'no-cache', headers: { 'Content-Type': 'text/plain' }, signal: controller.signal });
+                        clearTimeout(timeoutId);
+
+                        if (!response.ok) throw new Error(`Network error (HTTP Status ${response.status})`);
+                        
+                        const textResponse = await response.text();
+                        if (textResponse.startsWith('<')) {
+                            // This means the GAS script URL is wrong or deployment failed, returning HTML error page
+                            throw new Error("Invalid server response. Check Apps Script URL/Deployment.");
+                        }
+                        
+                        const jsonResponse = JSON.parse(textResponse);
+                        
+                        return jsonResponse;
+                        
+                    } catch(error) {
+                        clearTimeout(timeoutId);
+                        console.error("API Post Error:", error);
+                        throw error;
+                    }
+                }
+                
+                function promptForClientId() {
+                    dom.splashScreen.style.display = 'none';
+                    dom.modalContainer.innerHTML = `<div class="modal-content"><h3>ברוכים הבאים</h3><p style="color: var(--text-light); margin: 10px 0 20px 0;">כדי להתחבר, אנא הזן מספר לקוח או טלפון.</p><form id="login-form"><input type="text" id="login-identifier" placeholder="מספר לקוח / טלפון" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); font-size: 16px; margin-bottom: 15px;"><button type="submit" class="btn" style="width: 100%;">התחבר</button></form></div>`;
+                    dom.modalContainer.classList.add('show');
+                    
+                    document.getElementById('login-form').addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const identifier = document.getElementById('login-identifier').value.trim();
+                        if (identifier) {
+                            dom.modalContainer.classList.remove('show');
+                            dom.splashScreen.style.display = 'flex';
+                            dom.splashScreen.classList.add('loading');
+                            loadClientData(identifier);
+                        }
+                    });
+                }
+                // בתוך הסקריפט הראשי שלך, אחרי הפונקציות הקיימות:
+
+                function saveClientToken(token) {
+                    if (!token) return;
+                    localStorage.setItem('saban_client_token', token);
+                    console.log('Client token saved:', token);
+                }
+
+                async function sendNotificationToClient(title, body) {
+                    // This function is for internal server use typically, mocked here.
+                    console.log(`MOCK: Sending notification to client. Title: ${title}, Body: ${body}`);
+                }
+
+                function updateClock() {
+                    const now = new Date();
+                    dom.clock.textContent = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+                    dom.date.textContent = now.toLocaleDateString('he-IL', { weekday: 'long', day: '2-digit', month: '2-digit' });
+                }
+
+                async function playSplashScreenAnimation() {
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            dom.splashScreen.style.opacity = '0';
+                            dom.splashScreen.addEventListener('transitionend', () => {
+                                dom.splashScreen.style.display = 'none';
+                                resolve();
+                            }, { once: true });
+                        }, 500);
+                    });
+                }
+                
+                function navigateTo(pageId, isInitial = false) {
+                     if (!isInitial && currentPageId === pageId) return;
+                    const oldPage = document.getElementById(currentPageId);
+                    const newPage = document.getElementById(pageId);
+                    if (!newPage) return;
+                    
+                    // סדר העמודים החדש לטובת אנימציית המעבר
+                    const pagesOrder = ['page-containers', 'page-materials', 'page-history', 'page-chat'];
+                    
+                    if (isInitial) { newPage.classList.add('active'); } 
+                    else {
+                        const oldPageIndex = pagesOrder.indexOf(currentPageId);
+                        const newPageIndex = pagesOrder.indexOf(pageId);
+                        
+                        // Fallback for page-home which is not in the nav anymore
+                        if (oldPageIndex === -1) { oldPage.classList.remove('active'); newPage.classList.add('active'); }
+                        else {
+                            const isForward = newPageIndex > oldPageIndex;
+                            oldPage.classList.remove('active');
+                            oldPage.classList.add(isForward ? 'exit-to-left' : 'exit-to-right');
+                            
+                            newPage.classList.add(isForward ? 'enter-from-right' : 'enter-from-left');
+                            void newPage.offsetWidth; 
+                            newPage.classList.add('active');
+                            oldPage.addEventListener('transitionend', function handler() {
+                                oldPage.classList.remove('exit-to-left', 'exit-to-right');
+                                newPage.classList.remove('enter-from-left', 'enter-from-right');
+                                oldPage.removeEventListener('transitionend', handler);
+                            }, { once: true });
+                        }
+                    }
+                    currentPageId = pageId;
+                    dom.navButtons.forEach(b => b.classList.toggle('active', b.dataset.page === pageId));
+                    if (pageId === 'page-materials') updateFormView(); // ודא ששלב 1 מוצג
+                }
+
+                function renderAllPages() {
+                    renderHeaderAndGreeting();
+                    renderHomePage(); 
+                    renderContainersPage(); 
+                    renderHistoryPage();
+                    renderChatPage();
+                }
+
+                function renderHeaderAndGreeting() {
+                    const defaultAvatar = "https://placehold.co/40x40/0b72b9/ffffff?text=EA";
+                    dom.clientNameHeader.textContent = clientState.name;
+                    dom.profileAvatar.src = clientState.avatar || defaultAvatar;
+                    dom.profileAvatar.onerror = () => dom.profileAvatar.src = defaultAvatar;
+                    const hour = new Date().getHours();
+                    let greetingText = (hour < 12) ? "בוקר טוב" : (hour < 18) ? "צהריים טובים" : "ערב טוב";
+                    dom.greeting.textContent = `${greetingText}, ${clientState.name.split(' ')[0]}`;
+                }
+                
+                function renderHomePage() {
+                    const upcomingOrders = clientState.orders.filter(o => o['סטטוס'] !== 'סגור' && !o['מכולה ירדה']);
+                    const activeOnSite = clientState.orders.filter(o => o['סטטוס'] !== 'סגור' && o['מכולה ירדה']);
+                    
+                    if (upcomingOrders.length > 0) {
+                        const order = upcomingOrders.find(o => o['זמן הגעה משוער']);
+                        dom.etaCardContainer.innerHTML = order ? createEtaCardHTML(order) : '<div class="card" style="text-align:center;"><p>אין צפי הגעה עדכני להזמנות בדרך.</p></div>';
+                    } else { 
+                        dom.etaCardContainer.innerHTML = ''; 
+                    }
+                    
+                    const container = dom.activeOrdersContainer;
+                    container.innerHTML = '';
+                    if (activeOnSite.length > 0) {
+                        if (document.getElementById('page-home').classList.contains('active')) {
+                             const cardElement = createContainerCardElement(activeOnSite[0]);
+                             container.appendChild(cardElement);
+                             renderLeafletMap(cardElement.querySelector('.mini-map-container'), activeOnSite[0]['כתובת']);
+                        }
+                    } else if (upcomingOrders.length === 0) {
+                        container.innerHTML = '<div class="card" style="text-align:center;"><p>אין לך כרגע הזמנות פעילות.</p></div>';
+                    }
+                }
+
+                function createEtaCardHTML(order) {
+                    const eta = order['זמן הגעה משוער'];
+                    const driverName = order['שם נהג'];
+                    let truckClass = 'static-truck';
+                    let progressStyle = 'width: 0%;';
+                    let truckStyle = 'right: 0%;';
+                    let title = `${driverName ? `הנהג ${driverName} בדרך` : 'הזמנה בדרך'}`;
+                    let etaText = `צפי הגעה: ${eta || 'טרם עודכן'}`;
+
+                    if (eta) {
+                        const now = new Date();
+                        const [hours, minutes] = eta.split(':').map(Number);
+                        const etaDate = new Date(now);
+                        etaDate.setHours(hours, minutes, 0, 0);
+                        
+                        const startDate = new Date(now);
+                        startDate.setHours(now.getHours() - 1, 0, 0, 0); 
+
+                        const totalDuration = etaDate - startDate;
+                        const elapsedDuration = now - startDate;
+                        const progress = Math.min(100, Math.max(0, (elapsedDuration / totalDuration) * 100));
+
+                        progressStyle = `width: ${progress}%;`;
+                        truckStyle = `right: calc(${progress}% - 30px);`; 
+                        if(progress === 100) { title = 'הגיע ליעד! 📍'; truckStyle = 'right: 0%;'; }
+
+                        truckClass = '';
+                    }
+
+                    return `
+                        <div class="card eta-card ${eta ? 'active' : ''}">
+                            <div style="color: var(--brand); font-weight: 700;">${title}</div>
+                            <div>${etaText}</div>
+                            <div class="eta-road">
+                                <div class="eta-progress" style="${progressStyle}"></div>
+                                <div class="eta-truck ${truckClass}" style="${truckStyle}">
+                                    ${eta ? '<div class="siren"></div>' : ''}
+                                    🚛
+                                </div>
+                            </div>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">כתובת: ${order['כתובת']}</p>
+                        </div>`;
+                }
+
+                // דף המכולות (כעת הראשי)
+                function renderContainersPage() {
+                    const activeOnSite = clientState.orders.filter(o => o['סטטוס'] !== 'סגור' && o['מכולה ירדה']);
+                    const upcomingOrders = clientState.orders.filter(o => o['סטטוס'] !== 'סגור' && !o['מכולה ירדה']);
+                    
+                    const container = dom.containersList;
+                    container.innerHTML = '';
+                    
+                    // 1. צפי הגעה בראש הדף
+                    if (upcomingOrders.length > 0) {
+                        const order = upcomingOrders.find(o => o['זמן הגעה משוער']);
+                        if(order) container.appendChild(htmlToElement(createEtaCardHTML(order)));
+                    }
+
+                    // 2. רשימת מכולות פעילות
+                    if (activeOnSite.length === 0) { 
+                        container.innerHTML += '<div class="card" style="text-align:center;"><p>אין לך מכולות פעילות כרגע.</p><button class="btn secondary" data-action="navigate" data-page="page-materials" style="margin-top: 10px;">הזמן חומרים חדשים</button></div>'; 
+                        return; 
+                    }
+                    
+                    container.innerHTML += `<h2 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 15px;">המכולות הפעילות שלך (${activeOnSite.length}):</h2>`;
+                    activeOnSite.forEach(order => {
                         const cardElement = createContainerCardElement(order);
                         container.appendChild(cardElement);
+                        setTimeout(() => renderLeafletMap(cardElement.querySelector('.mini-map-container'), order['כתובת']), 100);
                     });
-                } else {
-                     dom.containersList.previousElementSibling.textContent = 'מכולות פעילות באתר';
-                     container.innerHTML = '<div class="card text-center text-text-muted">אין מכולות פעילות נוספות.</div>';
                 }
-
-            } else {
-                 dom.statusCubeContainer.innerHTML = '';
-                 dom.containersList.previousElementSibling.textContent = 'מכולות פעילות באתר';
-                 container.innerHTML = '<div class="card text-center text-text-muted">אין לך הזמנות פעילות או מכולות באתר כרגע.</div>';
-                 return;
-            }
-        }
-        
-        /**
-         * Renders the dynamic Status Cube for Containers or Materials.
-         * @param {object} order - The most urgent active order object.
-         * @returns {string} HTML string for the status cube.
-         */
-        function createStatusCubeHTML(order) {
-            const isContainer = order.type === 'Container';
-            
-            // Data fields
-            const driverName = order['שם נהג'];
-            const eta = order['זמן הגעה משוער'];
-            const address = order['כתובת'] || order['פרטי אספקה'];
-            
-            // Status Logic
-            const isEnRoute = order.סטטוס === 'בדרך' && driverName && eta;
-            const isWaiting = !isEnRoute && (order.סטטוס === 'חדשה' || order.סטטוס === 'פעילה');
-
-            const icon = isContainer ? '🛻' : '🧱';
-            const title = isContainer 
-                ? `סטטוס מכולה: ${order['סוג פעולה'] || 'פעילה'}` 
-                : 'סטטוס הזמנת חומרים';
-            const cubeClass = isWaiting ? 'status-waiting' : '';
-            
-            // Status Button
-            const statusButtonHTML = isWaiting 
-                ? `<div class="status-button waiting"><span style="animation: pulse-light 1s infinite;">💡</span>ממתין לשיבוץ</div>`
-                : `<div class="status-button btn-primary">${order.סטטוס}</div>`;
-
-            const driverEtaHTML = `
-                <div class="flex items-center gap-3">
-                    <span class="text-3xl">${isContainer ? '🛻' : '🚚'}</span>
-                    <div>
-                        <p class="font-bold text-lg fade-on-waiting">${isEnRoute ? `הנהג ${driverName} בדרך` : 'ממתין לשיבוץ נהג'}</p>
-                        <p class="text-sm fade-on-waiting">${isEnRoute ? `צפי הגעה: ${eta}` : 'צפי הגעה: טרם עודכן'}</p>
-                    </div>
-                </div>
-            `;
-            
-            return `
-                <div class="card status-cube ${cubeClass}">
-                    ${statusButtonHTML}
-                    <div class="flex items-start gap-4 mb-4">
-                        <span class="text-4xl">${icon}</span>
-                        <div>
-                            <h3 class="font-extrabold text-xl text-brand">${title}</h3>
-                            <p class="text-sm text-text-light">${order['שם פרויקט'] || 'פרויקט כללי'}</p>
-                        </div>
-                    </div>
-                    
-                    ${driverEtaHTML}
-                    
-                    <div class="text-sm mt-3 pt-3 border-t border-border">
-                        <p class="font-semibold">כתובת: ${address}</p>
-                        <p class="text-xs text-text-muted">סטטוס אחרון: ${order.סטטוס}</p>
-                    </div>
-                </div>
-            `;
-        }
-
-        function createContainerCardElement(order) {
-            const card = document.createElement('div');
-            card.className = 'card container-card';
-            // Mock remaining days logic for demonstration purposes
-            const remainingDays = 10; 
-            const isOverdue = false; 
-            
-            card.innerHTML = `
-                <div style="display:flex; justify-content: space-between; align-items: flex-start;">
-                    <div><h3 class="font-bold text-lg">${order['שם פרויקט'] || 'מכולה פעילה'}</h3><p class="text-sm text-text-light">${order['כתובת']}</p></div>
-                    <div class="text-center flex-shrink-0">
-                        <div class="font-bold text-xl text-brand">${remainingDays}</div>
-                        <div class="text-xs text-text-muted">ימים נותרו</div>
-                    </div>
-                </div>
-                <div class="text-sm mt-4">
-                    <p class="font-semibold">מזהה מכולה: ${order['מזהה מכולה (אופציו'] || '-'}</p>
-                    <p class="text-text-muted">תאריך סיום צפוי: ${new Date(order['תאריך סיום']).toLocaleDateString('he-IL')}</p>
-                </div>
-                <div class="grid grid-cols-2 gap-3 mt-4">
-                    <button class="btn-secondary py-2 px-4 rounded-lg text-sm" data-action="request-swap" data-order-id="${order['תאריך הזמנה']}">החלפה</button>
-                    <button class="btn-primary py-2 px-4 rounded-lg text-sm" data-action="request-pickup" data-order-id="${order['תאריך הזמנה']}">פינוי</button>
-                </div>`;
-            return card;
-        }
-
-        // --- Forms and Modals ---
-
-        function promptForClientId() {
-            console.log("[LOGIN_PROMPT] Displaying login modal.");
-             dom.modalContainer.innerHTML = `<div class="modal-content popup-card bg-card rounded-lg shadow-xl w-full max-w-md p-6"><h3 class="text-xl font-bold mb-4">ברוכים הבאים</h3><p class="text-text-light mb-5">כדי להתחבר, אנא הזן מספר לקוח.</p><form id="login-form"><input type="text" id="login-identifier" placeholder="מספר לקוח" required class="form-input w-full mb-4"><button type="submit" class="btn-primary w-full py-2 rounded-lg font-bold">התחבר</button></form></div>`;
-             dom.modalContainer.classList.add('show');
-            
-             document.getElementById('login-form').addEventListener('submit', (e) => {
-                 e.preventDefault();
-                 const identifier = document.getElementById('login-identifier').value.trim();
-                 if (identifier) {
-                     dom.modalContainer.classList.remove('show');
-                     dom.splashScreen.style.display = 'flex';
-                     dom.splashMessage.textContent = 'מאמת לקוח...';
-                     loadClientData(identifier);
-                 }
-             }, { once: true });
-        }
-
-        function openModal(modalId) {
-            dom.modalContainer.classList.add('show');
-            document.querySelectorAll('#modal-container > div').forEach(el => el.classList.add('hidden'));
-            const modalElement = document.getElementById(modalId);
-            if (modalElement) modalElement.classList.remove('hidden');
-        }
-
-        function closeModal() {
-            dom.modalContainer.classList.remove('show');
-        }
-
-        function openOrderMenu() {
-            if (state.selectedProject) {
-                // Mocking the project options logic for demonstration
-                const project = state.selectedProject;
-                dom.popupProjectName.textContent = project.name;
                 
-                dom.modalContainer.querySelector('#project-options-container').innerHTML = `
-                    <div class="card p-4 text-center bg-brand-light border-brand border-2">
-                         <p class="font-bold">${project.name}</p>
-                         <p class="text-xs text-text-muted">${project.address}</p>
-                    </div>
-                    <button data-action="open-containers-order" class="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-brand-light rounded-lg transition-all duration-300">
-                        <span class="text-3xl mb-1">🛻</span>
-                        <span class="font-bold text-sm">הזמנת/פינוי מכולה</span>
-                    </button>
-                    <button data-action="open-materials-form" class="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-brand-light rounded-lg transition-all duration-300">
-                        <span class="text-3xl mb-1">🧱</span>
-                        <span class="font-bold text-sm">הזמנת חומרים</span>
-                    </button>
-                `;
-                openModal('project-selector-popup');
-            } else {
-                 showToast('אנא בחר פרויקט תחילה.', '⚠️');
-            }
-        }
-        
-        // --- Materials Form Logic ---
-        
-        function openMaterialsOrderForm() {
-            resetForm();
-            openModal('materials-order-form');
-        }
-
-        function resetForm() {
-            currentStep = 1;
-            state.order.items = [];
-            // Reset fields in step 1 and step 3 (notes)
-            document.querySelectorAll('#form-step-1 input, #form-step-1 select, #order-notes').forEach(el => {
-                 if (el.type === 'date') el.valueAsDate = new Date();
-                 else if (el.tagName === 'SELECT') el.selectedIndex = 0;
-                 else el.value = '';
-            });
-            renderOrderItems();
-            updateFormView();
-            // Pre-fill address from selected project
-            if(state.selectedProject?.address) {
-                 document.getElementById('delivery-address').value = state.selectedProject.address;
-            }
-        }
-        
-        function updateFormView() {
-            // Check if DOM elements are available before accessing properties
-            if (dom.formSteps && dom.stepIndicators) {
-                dom.formSteps.forEach((step, i) => step.classList.toggle('hidden', i + 1 !== currentStep));
-                dom.stepIndicators.forEach((ind, i) => {
-                    ind.classList.toggle('step-active', i + 1 === currentStep);
-                    ind.classList.toggle('text-text-muted', i + 1 !== currentStep);
-                });
-
-                dom.formBackBtn.classList.toggle('invisible', currentStep === 1);
-                dom.formNextBtn.textContent = currentStep === 3 ? "שלח הזמנה לווצאפ" : "הבא";
-
-                if (currentStep === 3) {
-                    renderOrderSummary();
+                // פונקציה ליצירת אלמנט HTML מסטרינג
+                function htmlToElement(html) {
+                    const template = document.createElement('template');
+                    template.innerHTML = html.trim();
+                    return template.content.firstChild;
                 }
-            } else {
-                 // Fallback if called before cacheDomElements finished (unlikely with init flow)
-                 console.warn("updateFormView called before DOM cache complete.");
-            }
-        }
-        
-        function navigateForm(direction) {
-            const newStep = currentStep + direction;
-            if (newStep < 1 || newStep > 3) return;
 
-            if (direction > 0 && !validateStep(currentStep)) return;
+                function renderHistoryPage(filter = clientState.currentHistoryFilter) {
+                    clientState.currentHistoryFilter = filter;
+                    const projects = ['all', ...new Set(clientState.orders.map(o => o['פרוייקט']).filter(Boolean))];
+                    const filtersHTML = projects.map(p => `<button class="filter-btn ${filter === p ? 'active' : ''}" data-action="filter-history" data-project="${p}">${p === 'all' ? 'הכל' : p}</button>`).join('');
+                    
+                    const filteredOrders = clientState.orders
+                        .filter(o => filter === 'all' || o['פרוייקט'] === filter)
+                        .sort((a, b) => new Date(b['תאריך הזמנה']) - new Date(a['תאריך הזמנה'])); // מיון לפי תאריך יורד
 
-            currentStep = newStep;
-            updateFormView();
-        }
+                    const tableHTML = `
+                        <div id="history-filters">${filtersHTML}</div>
+                        <div style="overflow-x: auto;">
+                            <table class="history-table">
+                                <thead><tr><th>פרויקט</th><th>תעודה</th><th>תאריך</th><th>פעולה</th></tr></thead>
+                                <tbody>
+                                    ${filteredOrders.map(order => `
+                                        <tr class="history-row" data-action="show-history-details" data-order-id="${order['תעודה']}" data-action-type="${order['סוג פעולה']}">
+                                            <td>${order['פרוייקט'] || '-'}</td>
+                                            <td>${order['תעודה'] || ''}</td>
+                                            <td>${new Date(order['תאריך הזמנה'])?.toLocaleDateString('he-IL') || ''}</td>
+                                            <td>${order['סוג פעולה'] || ''}</td>
+                                        </tr>`).join('')}
+                                </tbody>
+                            </table>
+                        </div>`;
+                    dom.historyContent.innerHTML = tableHTML;
+                }
 
-        function validateStep(step) {
-            if (step === 1) {
-                const requiredFields = ['delivery-address', 'delivery-date', 'contact-name', 'contact-phone'];
-                for (const fieldId of requiredFields) {
-                    const field = document.getElementById(fieldId);
-                    if (!field.value.trim()) {
-                        showToast(`שדה חובה חסר: ${field.placeholder || field.id}`, '⚠️', 4000);
-                        field.focus();
-                        return false;
+                function renderChatPage() {
+                    const templates = { "שאלות נפוצות": ["מה צפי ההגעה?", "האם ניתן להאריך שהייה?"], "בקשות": ["המכולה מלאה, לתאם פינוי.", "פינוי דחוף, צרו קשר."] };
+                    let html = Object.keys(templates).map(cat => `<p style="font-weight: 600; margin-top: 15px; margin-bottom: 5px;">${cat}</p>` + templates[cat].map(t => `<button class="btn secondary" data-action="chat-template" style="width: 100%; justify-content: flex-start; text-align: right; margin-bottom: 5px;">${t}</button>`).join('')).join('');
+                    dom.chatContent.innerHTML = `<div id="chat-templates">${html}</div><form id="chat-form" style="margin-top: 20px;"><label for="chat-message">או כתוב הודעה חופשית: 👋</label><textarea id="chat-message" required placeholder="כתוב כאן..." style="width:100%; height:80px; padding:10px; border-radius:8px; border:1px solid var(--border); margin-top:5px;"></textarea><button type="submit" class="btn" style="width:100%; margin-top: 10px;">שלח הודעה</button></form>`;
+                }
+                
+                function createContainerCardElement(order) {
+                    const card = document.createElement('div');
+                    card.className = 'card container-card';
+                    const startDate = new Date(order['תאריך הזמנה']);
+                    const endDate = new Date(order['תאריך סיום צפוי']);
+                    const progress = Math.min(100, ((Date.now() - startDate) / (endDate - startDate)) * 100);
+                    const remainingDays = Math.ceil(Math.max(0, endDate - Date.now()) / (1000 * 60 * 60 * 24));
+                    const isOverdue = Date.now() > endDate;
+                    if(isOverdue) card.classList.add('overdue');
+                    
+                    const historyHTML = (order.requests || []).map(req => `<div class="request-history-item"><span>בקשת ${req.type}</span><span style="color: var(--text-muted);">${req.date}</span></div>`).join('');
+
+                    card.innerHTML = `
+                        ${isOverdue ? '<div class="overdue-badge">בחריגה</div>' : ''}
+                        <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+                            <div><h3 style="font-size: 1.1rem; margin-bottom: 4px;">${order['פרוייקט'] || `מכולה ${order['תעודה']}`}</h3><p style="color: var(--text-light); font-size: 0.9rem;">${order['כתובת']}</p></div>
+                            <div style="text-align: center; flex-shrink: 0; margin-right: 15px;">
+                                <div style="font-weight: bold; font-size: 1.2rem;">${isOverdue ? '!' : remainingDays}</div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted);">${isOverdue ? 'בחריגה' : 'ימים נותרו'}</div>
+                            </div>
+                        </div>
+                        <div class="progress-bar"><div class="progress-bar-inner" style="width: ${progress}%;"></div></div>
+                        <div class="mini-map-container" id="map-card-${order['תעודה']}"></div>
+                        <div class="request-history"><h4 style="font-size: 1rem; margin-bottom: 5px;">היסטוריית בקשות</h4>${historyHTML || '<p style="font-size: 14px; color: var(--text-muted);">אין בקשות קודמות.</p>'}</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px;">
+                            <button class="btn secondary" data-action="request-swap" data-order-id="${order['תעודה']}">החלפה</button>
+                            <button class="btn" data-action="request-pickup" data-order-id="${order['תעודה']}">פינוי</button>
+                        </div>`;
+                    return card;
+                }
+                
+                async function sendClientRequest(requestType, details) {
+                     try {
+                        showToast("שולח בקשה...", '💬');
+                        await apiPost({ 
+                            action: 'clientRequest', 
+                            timestamp: new Date().toISOString(),
+                            clientId: clientState.id, 
+                            clientName: clientState.name, 
+                            requestType, 
+                            details,
+                            orderType: 'container'
+                        });
+                        showToast("בקשתך נשלחה בהצלחה!", '✅');
+                        loadClientData(clientState.id, true);
+                    } catch (error) { 
+                        showToast(`שגיאה בשליחת הבקשה`, '❌'); 
                     }
                 }
-            }
-             if (step === 2) {
-                if(state.order.items.length === 0){
-                     showToast("אנא הוסף לפחות מוצר אחד להזמנה.", '⚠️', 4000);
-                    return false;
+                
+                // --- DYNAMIC FORM LOGIC ---
+                
+                function updateFormView() {
+                    // **FIX 2:** Added check for existence before using dom.stepIndicators
+                    if (!dom.stepIndicators || dom.stepIndicators.length === 0) {
+                        return; 
+                    }
+                    
+                    const step = clientState.materialOrder.step;
+                    
+                    // Show/hide steps
+                    dom.formSteps.forEach((s, i) => s.classList.toggle('hidden', i + 1 !== step));
+                    
+                    // Update indicators
+                    dom.stepIndicators.forEach((ind, i) => {
+                        ind.classList.toggle('step-active', i + 1 === step);
+                    });
+
+                    // Update buttons
+                    dom.formBackBtn.style.visibility = step === 1 ? 'hidden' : 'visible';
+                    dom.formNextBtn.textContent = step === 3 ? "שלח הזמנה" : "הבא";
+
+                    if (step === 2) {
+                        renderOrderItems();
+                        if (dom.productSearch.value) dom.productSearch.dispatchEvent(new Event('input'));
+                    } else if (step === 3) {
+                        renderOrderSummary();
+                    }
                 }
-            }
-            return true;
-        }
-
-        function handleProductSearch(e) {
-            const query = e.target.value.toLowerCase().trim();
-            if (query.length < 2) {
-                dom.productSuggestions.innerHTML = '';
-                return;
-            }
-
-            if (e.type === 'keydown' && e.key === 'Enter') {
-                 e.preventDefault();
-                 // Add item as free text if nothing is selected or no suggestions
-                 if (query) {
-                      addProductToOrder({ "שם מוצר": query, "מק\"ט": 'N/A', isUnidentified: true });
-                 }
-                 dom.productSearch.value = '';
-                 dom.productSuggestions.innerHTML = '';
-                 return;
-            }
-
-            // Standard input logic (filtering)
-            const suggestions = state.productCatalog.filter(p => 
-                (p["שם מוצר"]?.toLowerCase().includes(query)) || 
-                (String(p["מק\"ט"])?.toLowerCase().includes(query))
-            );
-
-            renderSuggestions(suggestions);
-        }
-
-        function renderSuggestions(suggestions) {
-            dom.productSuggestions.innerHTML = suggestions.slice(0, 5).map(p => `
-                <div class="p-3 hover:bg-gray-200 cursor-pointer flex justify-between items-center" data-sku="${p["מק\"ט"]}">
-                    <div>
-                        <p class="font-semibold">${p["שם מוצר"]}</p>
-                        <p class="text-sm text-text-muted">מק"ט: ${p["מק\"ט"] || 'אין'}</p>
-                    </div>
-                    <span class="text-brand font-bold text-lg">+</span>
-                </div>
-            `).join('');
-        }
-        
-        function addProductToOrder(product, quantity = 1) {
-            const sku = product["מק\"ט"];
-            const existingItem = sku ? state.order.items.find(item => item["מק\"ט"] === sku && !item.isUnidentified) : null;
-            
-            if(existingItem) {
-                existingItem.quantity += quantity;
-                showToast(`הכמות עבור ${product["שם מוצר"]} עודכנה ל-${existingItem.quantity}`, '👍', 2000);
-            } else {
-                 state.order.items.push({ ...product, quantity });
-                 showToast(`נוסף: ${product["שם מוצר"]}`, '✅', 2000);
-            }
-            renderOrderItems();
-        }
-
-        function renderOrderItems() {
-            dom.itemsCount.textContent = state.order.items.length;
-            if (state.order.items.length === 0) {
-                dom.orderItemsContainer.innerHTML = `<p class="text-center text-text-muted">המוצרים שתוסיף יופיעו כאן</p>`;
-                return;
-            }
-
-            dom.orderItemsContainer.innerHTML = state.order.items.map((item, index) => {
-                const isUnidentified = item.isUnidentified;
                 
-                // Calculate Total Units for Display
-                const quantityPerUnit = parseFloat(item["יח' במשטח"]);
-                const baseUnit = item["בסיס"];
-                const totalUnitsText = (quantityPerUnit > 1 && baseUnit) ? 
-                    `<p class="text-xs text-brand mt-1">(סה"כ ${item.quantity * quantityPerUnit} ${baseUnit})</p>` : '';
+                function navigateForm(direction) {
+                    const currentStep = clientState.materialOrder.step;
+                    const newStep = currentStep + direction;
+                    
+                    if (direction > 0 && !validateFormStep(currentStep)) return;
+                    if (newStep < 1 || newStep > 3) return;
 
-                return `
-                <div class="product-item flex items-center gap-4 p-3 bg-white border rounded-md shadow-sm ${isUnidentified ? 'highlight' : ''}">
-                    <div class="flex-grow">
-                        <p class="font-bold">${item["שם מוצר"]} ${isUnidentified ? '<span class="text-sm text-yellow-600">(טקסט חופשי)</span>' : ''}</p>
-                        <p class="text-xs text-text-muted">מק"ט: ${item["מק\"ט"] || 'לא זוהה'}</p>
-                    </div>
-                    <div class="text-center">
-                         <input type="number" value="${item.quantity}" min="1" class="form-input w-16 text-center p-1 text-sm" data-index="${index}" onchange="updateItemQuantity(this)">
-                         <p class="text-xs text-text-muted mt-1">${item["יחידת מידה"] || 'יח\''}</p>
-                         ${totalUnitsText}
-                    </div>
-                    <button class="text-red-500 hover:text-red-700" onclick="removeItemFromOrder(${index})">&times;</button>
-                </div>`;
-            }).join('');
-        }
-        
-        function updateItemQuantity(e) {
-            const index = e.dataset.index;
-            const newQuantity = parseFloat(e.value);
-            if(index !== undefined && newQuantity > 0) {
-                state.order.items[index].quantity = newQuantity;
-                renderOrderItems();
-            }
-        }
+                    clientState.materialOrder.step = newStep;
+                    updateFormView();
+                }
 
-        function removeItemFromOrder(index) {
-            state.order.items.splice(index, 1);
-            showToast("הפריט הוסר מההזמנה.", '🗑️', 2000);
-            renderOrderItems();
-        }
+                function validateFormStep(step) {
+                    const form = dom.materialsForm;
+                    if (step === 1) {
+                        const requiredFields = ['deliveryAddress', 'deliveryDate', 'contactName', 'contactPhone'];
+                        for (const fieldId of requiredFields) {
+                            if (!form[fieldId] || !form[fieldId].value.trim()) {
+                                showToast(`שדה ${form[fieldId].previousElementSibling.textContent} הוא חובה.`, '⚠️');
+                                form[fieldId].focus();
+                                return false;
+                            }
+                        }
+                    }
+                    if (step === 2) {
+                        if (clientState.materialOrder.items.length === 0) {
+                            showToast("אנא הוסף לפחות מוצר אחד להזמנה.", '⚠️');
+                            return false;
+                        }
+                    }
+                    return true;
+                }
 
-        function renderOrderSummary() {
-            const details = document.getElementById('summary-details');
-            const items = document.getElementById('summary-items');
-            
-            const deliveryDate = document.getElementById('delivery-date').value;
-            const transportType = document.getElementById('transport-type').value;
-            
-            details.innerHTML = `
-                <p><strong>פרויקט:</strong> ${state.selectedProject.name}</p>
-                <p><strong>כתובת:</strong> ${document.getElementById('delivery-address').value}</p>
-                <p><strong>תאריך אספקה:</strong> ${new Date(deliveryDate).toLocaleDateString('he-IL')}</p>
-                <p><strong>איש קשר:</strong> ${document.getElementById('contact-name').value} (${document.getElementById('contact-phone').value})</p>
-                <p><strong>סוג הובלה:</strong> ${transportType}</p>
-            `;
+                function handleProductSearch(e) {
+                    const query = e.target.value.toLowerCase().trim();
+                    if (query.length < 2) {
+                        dom.productSuggestions.innerHTML = '';
+                        return;
+                    }
 
-            items.innerHTML = state.order.items.map(item => `
-                <div class="flex justify-between">
-                    <span>${item["שם מוצר"]}</span>
-                    <span class="font-semibold">${item.quantity} ${item["יחידת מידה"] || 'יח\'' }</span>
-                </div>
-            `).join('');
-        }
+                    if (e.inputType === 'insertFromPaste') {
+                        parsePastedList(e.target.value);
+                        e.target.value = '';
+                        return;
+                    }
 
-        async function submitMaterialsOrder() {
-            showToast("שולח הזמנה לשרת...", '🚀', 5000);
-            const orderData = {
-                clientName: state.clientName,
-                clientId: state.clientId,
-                clientProject: state.selectedProject.name,
+                    // Filter using the dynamically loaded catalog
+                    const suggestions = clientState.productCatalog.filter(p => 
+                        (p["שם מוצר"]?.toLowerCase().includes(query)) || 
+                        (p["מק\"ט"]?.toString().toLowerCase().includes(query))
+                    ).slice(0, 5); // הצג עד 5 תוצאות
+
+                    renderSuggestions(suggestions);
+                }
+
+                function parsePastedList(text) {
+                     const lines = text.split('\n').filter(line => line.trim() !== '');
+                     let addedCount = 0;
+                     lines.forEach(line => {
+                         // מנסה לזהות את הכמות בסוף השורה
+                         const match = line.match(/(\d+(\.\d+)?)\s*$/);
+                         let quantity = 1;
+                         let name = line;
+
+                         if (match) {
+                             quantity = parseFloat(match[1]) || 1;
+                             name = line.substring(0, match.index).trim();
+                         }
+                         
+                         const matchedProduct = clientState.productCatalog.find(p => p["שם מוצר"]?.toLowerCase().includes(name.toLowerCase()) || p["מק\"ט"]?.toString().includes(name));
+
+                         if (matchedProduct) {
+                             addProductToOrder(matchedProduct, quantity);
+                             addedCount++;
+                         } else {
+                             // מוצר בטקסט חופשי (לא זוהה)
+                             addProductToOrder({ "שם מוצר": name, "מק\"ט": "N/A", "יחידת מידה": "יח'", isUnidentified: true, "יח' במשטח": 1, "בסיס": "יח'" }, quantity);
+                             addedCount++;
+                         }
+                     });
+                     if (addedCount > 0) {
+                         showToast(`${addedCount} פריטים נוספו להזמנה.`, '📝');
+                     }
+                }
+
+                function renderSuggestions(suggestions) {
+                    if (!suggestions.length) {
+                        dom.productSuggestions.innerHTML = `<div class="p-3 text-center text-text-muted">לא נמצאו מוצרים תואמים בקטלוג.</div>`;
+                        return;
+                    }
+                    dom.productSuggestions.innerHTML = suggestions.map(p => `
+                        <div class="p-3 hover:bg-gray-100 cursor-pointer flex justify-between items-center" data-sku="${p["מק\"ט"]}" data-action="add-product">
+                            <div>
+                                <p class="font-semibold">${p["שם מוצר"]}</p>
+                                <p class="text-sm text-text-muted">מק"ט: ${p["מק\"ט"] || 'אין'} | יח' מידה: ${p["יחידת מידה"]}</p>
+                            </div>
+                             <button class="btn p-1 text-sm rounded-full" data-action="add-product" data-sku="${p["מק\"ט"]}">+ הוסף</button>
+                        </div>
+                    `).join('');
+                }
                 
-                deliveryAddress: document.getElementById('delivery-address').value,
-                deliveryDate: document.getElementById('delivery-date').value,
-                deliveryWindow: document.getElementById('delivery-window').value,
-                transportType: document.getElementById('transport-type').value,
-                contactName: document.getElementById('contact-name').value,
-                contactPhone: document.getElementById('contact-phone').value,
-                notes: document.getElementById('order-notes').value,
+                function addProductToOrder(product, quantity = 1) {
+                    const sku = product["מק\"ט"];
+                    const existingItem = clientState.materialOrder.items.find(item => item["מק\"ט"] === sku && !item.isUnidentified);
+                    
+                    if(existingItem && !product.isUnidentified) {
+                        existingItem.quantity += quantity;
+                    } else {
+                         clientState.materialOrder.items.push({ ...product, quantity });
+                    }
+                    renderOrderItems();
+                }
+
+                function renderOrderItems() {
+                    if (!dom.orderItemsContainer) return;
+                    const items = clientState.materialOrder.items;
+                    if (items.length === 0) {
+                        dom.orderItemsContainer.innerHTML = `<p class="text-center text-text-muted">הוסף מוצרים לבחירתך</p>`;
+                        return;
+                    }
+
+                    dom.orderItemsContainer.innerHTML = items.map((item, index) => {
+                        const isUnidentified = item.isUnidentified;
+                        const totalUnits = (item["יח' במשטח"] > 1 && item["יחידת מידה"] !== item["בסיס"]) ? 
+                            `(${item.quantity * item["יח' במשטח"]} ${item["בסיס"]})` : '';
+
+                        return `
+                        <div class="product-item flex items-center gap-4 p-3 border rounded-md shadow-sm ${isUnidentified ? 'unidentified' : ''}">
+                            <div class="flex-grow">
+                                <p class="font-bold">${item["שם מוצר"]} ${isUnidentified ? '<span class="text-yellow-600 font-sans text-lg" title="פריט בטקסט חופשי, אנא וודא את הפרטים">⚠️</span>' : ''}</p>
+                                <p class="text-sm text-text-muted">מק"ט: ${item["מק\"ט"] || 'לא זוהה'}</p>
+                            </div>
+                            <div class="text-center">
+                                 <input type="number" value="${item.quantity}" min="0.1" step="any" class="form-input w-20 text-center p-1 text-base" data-index="${index}" data-action="update-quantity" onchange="window.updateItemQuantity(event)">
+                                 <p class="text-xs text-text-muted mt-1">${item["יחידת מידה"] || 'יח\''}</p>
+                            </div>
+                            <button class="text-red-500 hover:text-red-700 p-2" data-index="${index}" data-action="remove-item">&times;</button>
+                        </div>
+                        ${totalUnits ? `<p class="text-sm text-brand font-semibold text-left -mt-2 mr-4">${totalUnits}</p>` : ''}
+                        `;
+                    }).join('');
+                }
                 
-                items: state.order.items
-            };
-            console.log("[SUBMIT] Final Order Data:", orderData);
-
-            try {
-                 const result = await apiPost({ action: 'submitMaterialsOrder', order: orderData });
-                 console.log("[SUBMIT] Server response:", result);
-                 showToast("ההזמנה נשמרה בגיליון! פותח וואטסאפ...", '💾', 3000);
-                 
-                 closeModal();
-                 resetForm();
-                 
-                 // Open WhatsApp link provided by the server
-                 if (result.whatsappUrl) {
-                     window.open(result.whatsappUrl, '_blank');
-                 }
-
-            } catch (error) {
-                 console.error("Materials Submission failed:", error);
-                 showToast(`שגיאה בשליחת ההזמנה: ${error.message}`, '❌', 8000);
-            }
-        }
-        
-        // --- Hinting Logic (UX refinement) ---
-
-        function showFieldHint(e) {
-            const field = e.target;
-            const hint = field.dataset.hint;
-            if (hint && e.type === 'focus') {
-                 showToast(hint, '💡', 5000); 
-            }
-            // Logic to clear hints on blur is handled by the natural toast expiration
-        }
-
-
-        // --- Event Listener Setup ---
-
-        function setupEventListeners() {
-            console.log("[INIT] 3. Setting up event listeners.");
-            dom.body.addEventListener('click', (e) => {
-                const actionElement = e.target.closest('[data-action]');
-                if (!actionElement) {
-                    // תיקון: ודא ש-dom.profileContainer קיים לפני הגישה ל-classList
-                    if(dom.profileContainer && !e.target.closest('#profile-container')) dom.profileContainer.classList.remove('active');
-                    if(e.target.classList.contains('modal-overlay')) closeModal();
-                    return;
+                window.updateItemQuantity = (e) => {
+                    const index = e.target.dataset.index;
+                    const newQuantity = parseFloat(e.target.value);
+                    if(index !== undefined && newQuantity > 0) {
+                        clientState.materialOrder.items[index].quantity = newQuantity;
+                        renderOrderItems();
+                    } else if (newQuantity <= 0) {
+                        removeItemFromOrder(parseInt(index));
+                    }
                 };
 
-                const action = actionElement.dataset.action;
-                console.log(`[CLICK] Action triggered: ${action}`);
-                switch(action) {
-                    case 'navigate': navigateTo(actionElement.dataset.page); break;
-                    case 'toggle-profile': dom.profileContainer.classList.toggle('active'); break;
-                    case 'logout': localStorage.clear(); window.location.reload(); break;
-                    case 'new-order-menu': openOrderMenu(); break;
-                    case 'open-materials-form': closeModal(); openMaterialsOrderForm(); break;
-                    case 'close-modal': closeModal(); break;
+                function removeItemFromOrder(index) {
+                    clientState.materialOrder.items.splice(index, 1);
+                    renderOrderItems();
+                }
+
+                function renderOrderSummary() {
+                    const form = dom.materialsForm;
+                    const deliveryDate = form.deliveryDate.value ? new Date(form.deliveryDate.value).toLocaleDateString('he-IL') : 'לא צוין';
+                    const contactPerson = form.contactName.value || 'לא צוין';
+                    const contactPhone = form.contactPhone.value || 'לא צוין';
+                    
+                    dom.summaryDetails.innerHTML = `
+                        <p><strong>לקוח:</strong> ${clientState.name}</p>
+                        <p><strong>פרויקט:</strong> ${clientState.orders.find(o => o['תעודה'] == clientState.orders[0]['תעודה'])?.['פרוייקט'] || 'פרויקט ראשי'}</p>
+                        <p><strong>כתובת:</strong> ${form.deliveryAddress.value}</p>
+                        <p><strong>תאריך אספקה:</strong> ${deliveryDate}</p>
+                        <p><strong>סוג הובלה:</strong> ${form.transportType.value}</p>
+                        <p><strong>איש קשר:</strong> ${contactPerson} (${contactPhone})</p>
+                    `;
+                    
+                    dom.summaryItems.innerHTML = clientState.materialOrder.items.map(item => {
+                        const totalUnitsText = (item["יח' במשטח"] > 1 && item["יחידת מידה"] !== item["בסיס"]) ? 
+                            `(${item.quantity * item["יח' במשטח"]} ${item["בסיס"]})` : '';
+
+                        return `
+                        <div class="flex justify-between items-center text-sm ${item.isUnidentified ? 'text-yellow-600' : 'text-text-dark'}">
+                            <span class="font-semibold">${item["שם מוצר"]} ${item.isUnidentified ? '⚠️' : ''}</span>
+                            <span class="font-bold">${item.quantity} ${item["יחידת מידה"] || 'יח\''} ${totalUnitsText}</span>
+                        </div>
+                    `;
+                    }).join('');
+                    
+                    // ודא שהערות נמצאות ב-state לפני השליחה
+                    form.deliveryNotes.value = form.deliveryNotes.value || ''; 
+                }
+
+
+                async function submitMaterialsOrder() {
+                    const form = dom.materialsForm;
+                    const button = dom.formNextBtn;
+                    
+                    const deliveryAddress = form.deliveryAddress.value;
+                    const contactName = form.contactName.value;
+                    const contactPhone = form.contactPhone.value;
+                    
+                    const orderData = {
+                        orderType: 'materials', // סוג ההזמנה - חשוב לתיעוד בגליון
+                        clientName: clientState.name,
+                        clientId: clientState.id, 
+                        clientProject: clientState.orders.find(o => o['תעודה'] == clientState.orders[0]['תעודה'])?.['פרוייקט'] || 'פרויקט ראשי',
+                        deliveryAddress: deliveryAddress,
+                        deliveryDate: form.deliveryDate.value,
+                        contactName: contactName,
+                        contactPhone: contactPhone.replace(/-/g, ''), // הסרת מקפים
+                        transportType: form.transportType.value,
+                        notes: form.deliveryNotes.value,
+                        items: clientState.materialOrder.items, // רשימת מוצרים מפורטת
+                        isUrgent: false 
+                    };
+
+                    button.disabled = true;
+                    button.innerHTML = '<span style="animation: spin 1s linear infinite; display: inline-block;">🔄</span> שולח...';
+                    showToast('🔄 שולח הזמנה לטיפול...');
+                    
+                    try {
+                        const response = await apiPost({ 
+                            action: 'submitMaterialsOrder', 
+                            order: orderData 
+                        });
+                        
+                        if (response.status === 'success') {
+                            showToast('✅ ההזמנה נשלחה בהצלחה!', `הסטטוס המעודכן הוא: ${response.newStatus || 'חדשה'}. עקוב בהיסטוריה.`);
+                            
+                            // **NEW LOGIC: WhatsApp sharing is triggered AFTER successful server save**
+                            // The server-side function will handle the actual WhatsApp link creation and logging
+                            shareOrderViaWhatsApp(orderData); // We keep the local share function for client-side immediate feedback
+                            
+                            form.reset();
+                            clientState.materialOrder.items = [];
+                            clientState.materialOrder.step = 1;
+                            navigateTo('page-history');
+                        } else {
+                            throw new Error(response.message || 'שגיאה כללית בשליחת ההזמנה');
+                        }
+                    } catch (error) {
+                        console.error("Materials Submission failed:", error);
+                        showToast("❌ שגיאה בשליחת ההזמנה: " + error.message, 'error');
+                    } finally {
+                        button.disabled = false;
+                        button.textContent = 'הבא';
+                    }
                 }
                 
-                // Product selection from suggestion list
-                const suggestion = e.target.closest('[data-sku]');
-                if (suggestion) {
-                    const sku = suggestion.dataset.sku;
-                    const product = state.productCatalog.find(p => p["מק\"ט"] == sku);
-                    if (product) {
-                        addProductToOrder(product);
-                    }
-                    dom.productSuggestions.innerHTML = '';
-                    dom.productSearch.value = '';
+                function shareOrderViaWhatsApp(order) {
+                    const itemsList = order.items.map((item, index) => {
+                        const skuText = item["מק\"ט"] && item["מק\"ט"] !== 'N/A' ? ` (מק"ט ${item["מק\"ט"]})` : '';
+                        const totalUnitsText = (item["יח' במשטח"] > 1 && item["יחידת מידה"] !== item["בסיס"]) ? 
+                             `* (סה"כ ${item.quantity * item["יח' במשטח"]} ${item["בסיס"]})` : '';
+                             
+                        const quantityText = `${item.quantity} ${item["יחידת מידה"]}`;
+                        
+                        return `*${index + 1}. ${item["שם מוצר"]}*${skuText}\n - *כמות:* ${quantityText} ${totalUnitsText}`;
+                    }).join('\n');
+                    
+                    const notesText = order.notes ? `\n\n*📝 הערות לקוח:*\n${order.notes}` : '';
+                    
+                    const whatsappMessage = encodeURIComponent(
+                        `*📦 הזמנת חומרי בניין חדשה 🧱*\n` +
+                        `*סטטוס: חדשה*\n\n` +
+                        `*👤 לקוח:* ${order.clientName}\n` +
+                        `*🏗️ פרויקט:* ${order.clientProject}\n` +
+                        `*🆔 מספר לקוח:* ${order.clientId}\n\n` +
+                        `*📍 פרטי אספקה:*\n` +
+                        `• *כתובת:* ${order.deliveryAddress}\n` +
+                        `• *איש קשר:* ${order.contactName} (${order.contactPhone})\n` +
+                        `• *תאריך:* ${new Date(order.deliveryDate).toLocaleDateString('he-IL')}\n\n` +
+                        `*🚚 סוג הובלה: ${order.transportType}*\n\n` +
+                        `*🧱 פריטים שהוזמנו:*\n${itemsList}` +
+                        `${notesText}`
+                    );
+                    
+                    // Replace 1234567890 with your actual receiving WhatsApp number
+                    window.open(`https://api.whatsapp.com/send?phone=9725XXXXXXXX&text=${whatsappMessage}`, '_blank'); 
+                    showToast('נפתח חלון וואטסאפ לשליחה. אנא אשר את ההודעה.', '📢');
                 }
-            });
-            
-            // --- Form Navigation & Submission ---
-            dom.formNextBtn.addEventListener('click', () => {
-                if (currentStep === 3) {
-                    submitMaterialsOrder();
-                } else {
-                    navigateForm(1);
+
+                function openOrderModal(actionType, order) {
+                     const isNewOrder = !order;
+                     let title = isNewOrder ? "הזמנת מכולה חדשה" : `בקשת ${actionType}`;
+                     let addressContent = isNewOrder ? `<div class="form-group"><label>בחר כתובת או הקלד חדשה</label><select id="address-select" class="form-input" style="margin-top:5px;"><option value="">-- בחר כתובת --</option>${Array.from(clientState.addresses).map(a => `<option value="${a}">${a}</option>`).join('')}<option value="new">כתובת חדשה...</option></select></div><div id="new-address-group" style="display:none; margin-top:10px;"><input type="text" id="new-address" class="form-input" placeholder="עיר, רחוב, מספר בית"></div><div style="margin-top:10px;"><input type="text" id="placement-location" class="form-input" placeholder="מיקום מדויק להצבה (ליד השער וכו')"></div>` : `<p style="margin-bottom: 20px;">עבור מכולה בכתובת: <strong>${order['כתובת']}</strong></p>`;
+                     dom.modalContainer.innerHTML = `<div class="modal-content"><h3 style="margin-bottom: 20px;">${title}</h3>${addressContent}<form id="order-request-form"><div style="margin-top:15px;"><label>הערות</label><textarea id="order-notes" placeholder="לדוגמה: נא לתאם הגעה טלפונית..." class="form-input" style="height:80px; margin-top:5px;"></textarea></div><div style="display: flex; gap: 10px; margin-top:20px;"><button type="button" class="btn secondary" data-action="close-modal" style="flex:1;">ביטול</button><button type="submit" class="btn" style="flex:2;">שלח בקשה</button></div></form></div>`;
+                     dom.modalContainer.classList.add('show');
+                    if (isNewOrder) { document.getElementById('address-select').onchange = (e) => { document.getElementById('new-address-group').style.display = e.target.value === 'new' ? 'block' : 'none'; }; }
+                    dom.modalContainer.querySelector('[data-action="close-modal"]').onclick = () => dom.modalContainer.classList.remove('show');
+                    document.getElementById('order-request-form').onsubmit = (e) => {
+                        e.preventDefault();
+                        let details, address;
+                        const notes = document.getElementById('order-notes').value;
+                        if(isNewOrder) {
+                            const newAddress = document.getElementById('new-address').value.trim();
+                            const placement = document.getElementById('placement-location').value.trim();
+                            address = newAddress || document.getElementById('address-select').value;
+                            if (!address || address === 'new' || address === '') { showToast('אנא בחר או הקלד כתובת.', 'error'); return; }
+                            details = `כתובת: ${address}. מיקום להצבה: ${placement || 'לא צוין'}. הערות: ${notes || 'אין'}`;
+                        } else { 
+                            details = `מכולה קיימת: ${order['תעודה']}. כתובת: ${order['כתובת']}. הערות: ${notes || 'אין'}`; 
+                        }
+                        sendClientRequest(actionType, details);
+                        dom.modalContainer.classList.remove('show');
+                    };
                 }
+
+                function openHistoryDetailModal(order) {
+                    if (!order) return;
+                    dom.modalContainer.innerHTML = `<div class="modal-content" style="padding:0;"><div style="padding: 20px 20px 0 20px;"><h3 style="margin-bottom: 10px;">פרטי הזמנה ${order['תעודה']}</h3><p><strong>פרויקט:</strong> ${order['פרוייקט'] || '-'}</p><p><strong>כתובת:</strong> ${order['כתובת']}</p><p><strong>תאריך:</strong> ${new Date(order['תאריך הזמנה'])?.toLocaleDateString('he-IL')}</p><p><strong>פעולה:</strong> ${order['סוג פעולה']}</p></div><div id="history-map" style="height: 200px; width: 100%; margin-top: 15px; border-bottom-left-radius: var(--radius); border-bottom-right-radius: var(--radius);"></div></div>`;
+                    dom.modalContainer.classList.add('show');
+                    renderLeafletMap(document.getElementById('history-map'), order['כתובת']);
+                    dom.modalContainer.onclick = (e) => { if(e.target === dom.modalContainer) dom.modalContainer.classList.remove('show'); };
+                }
+
+                function renderLeafletMap(container, address) { 
+                     if (!container || !address) return;
+                    const mapId = container.id;
+                    if (mapInstances[mapId]) mapInstances[mapId].remove();
+                    container.innerHTML = '<div style="text-align:center; padding-top: 50px; color: var(--text-muted);">טוען מפה...</div>';
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data && data.length > 0) {
+                                container.innerHTML = '';
+                                const { lat, lon } = data[0];
+                                const map = L.map(container, { zoomControl: false, scrollWheelZoom: false, dragging: true, doubleClickZoom: false }).setView([lat, lon], 15);
+                                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                                L.marker([lat, lon]).addTo(map);
+                                mapInstances[mapId] = map;
+                            } else { container.innerHTML = '<div style="text-align:center; padding-top: 50px; color: var(--text-muted);">כתובת לא נמצאה.</div>'; }
+                        }).catch(err => { container.innerHTML = '<div style="text-align:center; padding-top: 50px; color: var(--text-muted);">שגיאה בטעינת מפה.</div>'; });
+                }
+                function showToast(message, icon = 'ℹ️') { 
+                    const toast = document.createElement('div');
+                    toast.className = `toast`;
+                    toast.innerHTML = `<span class="toast-icon">${icon}</span> <span>${message}</span>`;
+                    dom.toastContainer.appendChild(toast);
+                    setTimeout(() => toast.classList.add('show'), 100);
+                    setTimeout(() => {
+                        toast.classList.remove('show');
+                        toast.addEventListener('transitionend', () => toast.remove());
+                    }, 3000);
+                }
+                
+                function setupEventListeners() {
+                    dom.body.addEventListener('click', (e) => {
+                        const actionElement = e.target.closest('[data-action]');
+                        if (!actionElement) {
+                            if(!e.target.closest('#profile-container')) dom.profileContainer.classList.remove('active');
+                            if(e.target.classList.contains('modal-overlay')) dom.modalContainer.classList.remove('show');
+                            return;
+                        };
+
+                        const action = actionElement.dataset.action;
+                        switch(action) {
+                            case 'navigate': navigateTo(actionElement.dataset.page); break;
+                            case 'help-fab': dom.helpModal.classList.add('show'); break;
+                            case 'help-close': dom.helpModal.classList.remove('show'); break;
+                            case 'toggle-profile': dom.profileContainer.classList.toggle('active'); break;
+                            case 'logout': localStorage.clear(); window.location.reload(); break;
+                            case 'new-order': openOrderModal('הזמנה חדשה'); break;
+                            case 'chat-template': document.getElementById('chat-message').value = actionElement.textContent; break;
+                            case 'refresh-data':
+                                if (clientState.id) {
+                                    const btn = actionElement;
+                                    btn.style.transition = 'transform 0.5s ease';
+                                    btn.style.transform = 'rotate(360deg)';
+                                    btn.disabled = true;
+                                    
+                                    showToast("מרענן נתונים...", '🔄');
+                                    loadClientData(clientState.id, true)
+                                        .then(() => {
+                                            showToast("הנתונים עודכנו!", '✅');
+                                        })
+                                        .catch((err) => {
+                                            console.error("Refresh failed:", err);
+                                            showToast("שגיאה ברענון הנתונים", '❌');
+                                        })
+                                        .finally(() => {
+                                           setTimeout(() => {
+                                                btn.style.transition = '';
+                                                btn.style.transform = '';
+                                                btn.disabled = false;
+                                            }, 500);
+                                        });
+                                }
+                                break;
+                            case 'filter-history': 
+                                renderHistoryPage(actionElement.dataset.project); 
+                                break;
+                            case 'show-history-details':
+                                const order = clientState.orders.find(o => o['תעודה'] == actionElement.dataset.orderId);
+                                openHistoryDetailModal(order);
+                                break;
+                            case 'request-swap': case 'request-pickup': {
+                                const orderId = actionElement.dataset.orderId;
+                                const order = clientState.orders.find(o => o['תעודה'] == orderId);
+                                if (order) openOrderModal(action === 'request-swap' ? 'החלפה' : 'פינוי', order);
+                                break;
+                            }
+                            // Form actions
+                            case 'add-product': {
+                                const sku = actionElement.dataset.sku || actionElement.closest('[data-sku]')?.dataset.sku;
+                                const product = clientState.productCatalog.find(p => p["מק\"ט"] == sku);
+                                if (product) {
+                                    addProductToOrder(product);
+                                }
+                                dom.productSuggestions.innerHTML = '';
+                                dom.productSearch.value = '';
+                                break;
+                            }
+                            case 'remove-item': {
+                                const index = parseInt(actionElement.dataset.index);
+                                removeItemFromOrder(index);
+                                break;
+                            }
+                        }
+                    });
+
+                    dom.body.addEventListener('submit', e => {
+                        if (e.target.id === 'chat-form') {
+                            e.preventDefault();
+                            const msgInput = document.getElementById('chat-message');
+                            if (msgInput.value.trim()) {
+                                sendClientRequest('הודעת צאט', msgInput.value.trim());
+                                msgInput.value = '';
+                            }
+                        }
+                    });
+                    
+                    // Multi-step form buttons
+                    dom.formNextBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (clientState.materialOrder.step === 3) {
+                            submitMaterialsOrder();
+                        } else {
+                            navigateForm(1);
+                        }
+                    });
+                    dom.formBackBtn.addEventListener('click', () => navigateForm(-1));
+                    
+                    // Product search input
+                    dom.productSearch.addEventListener('input', handleProductSearch);
+
+                    // Attach to body since order items are rendered dynamically
+                    dom.body.addEventListener('change', e => {
+                        if (e.target.dataset.action === 'update-quantity') {
+                            window.updateItemQuantity(e);
+                        }
+                    });
+                }
+                
+                // Initialize form state and view
+                clientState.materialOrder.step = 1;
+                updateFormView();
+
+                initApp();
             });
-            dom.formBackBtn.addEventListener('click', () => navigateForm(-1));
-            
-            // --- Product Search/Add ---
-            dom.productSearch.addEventListener('input', handleProductSearch);
-            dom.productSearch.addEventListener('keydown', handleProductSearch);
-            
-            // --- UX Hinting ---
-            document.querySelectorAll('#form-step-1 input, #form-step-1 select, #order-notes, #product-search').forEach(el => {
-                 el.addEventListener('focus', showFieldHint);
-            });
+        } catch (e) {
+            // Fallback for critical errors
+            document.body.innerHTML = `<div style="padding: 20px; text-align: center;"><h1>אפליקציה נתקלה בשגיאה חמורה</h1><p>נסה לרענן את הדף.</p></div>`
+            console.error("Critical application error:", e);
         }
-
-        // Expose global functions needed by inline HTML attributes
-        window.updateItemQuantity = updateItemQuantity;
-        window.removeItemFromOrder = removeItemFromOrder;
-
-
-        initApp();
     })();
     </script>
+
+    <!-- הוסרו לחלוטין כל קטעי הקוד הקשורים ל-Firebase, FCM ו-Service Workers. -->
+    <!-- התקשורת מתבצעת כעת רק דרך API_URL. -->
 </body>
 </html>
