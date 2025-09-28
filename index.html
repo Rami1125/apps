@@ -30,19 +30,12 @@
             });
 
             // *** חלק חשוב: איך להתחבר ללקוח ספציפי (Targeting) ***
-            // ברגע שמשתמש מתחבר, נרצה לשייך את המזהה שלו ב-OneSignal למספר הלקוח (Client ID) שלנו.
-            // כך נוכל לשלוח התראות רק אליו.
-            
-            // נניח ש-loadClientData() מטעין את clientState.id (מספר לקוח).
-            // ניתן לקרוא לפונקציה הזו אחרי שה-SDK סיים אתחול:
-            
-            if (localStorage.getItem('saban_client_id')) {
-                // המשתמש מחובר - נשייך אותו ב-OneSignal באמצעות setExternalUserId
-                const clientId = localStorage.getItem('saban_client_id');
-                if (clientId) {
-                    OneSignal.setExternalUserId(clientId);
-                    console.log(`OneSignal: External User ID set to client ID: ${clientId}`);
-                }
+            // אם המשתמש כבר מחובר ב-localStorage בעת טעינת הדף, נשייך אותו מיד.
+            const clientId = localStorage.getItem('saban_client_id');
+            if (clientId) {
+                // קריאה זו תרוץ רק לאחר שה-SDK מוכן
+                OneSignal.setExternalUserId(clientId);
+                console.log(`OneSignal (Init): External User ID set to client ID: ${clientId}`);
             }
 
             // ניתן גם להוסיף Event Listener לכפתור ההרשמה של OneSignal
@@ -543,10 +536,13 @@
                         };
                         localStorage.setItem('saban_client_id', clientState.id);
                         
-                        // *** OneSignal: הגדרת מזהה משתמש חיצוני לאחר ההתחברות ***
-                        if (window.OneSignal) {
-                            window.OneSignal.setExternalUserId(clientState.id);
-                            console.log(`OneSignal: External User ID set to client ID: ${clientState.id}`);
+                        // *** OneSignal FIX: נוודא ש-OneSignal קיים לפני הקריאה לפונקציה, 
+                        // ומשתמשים ב-OneSignalDeferred.push אם אנחנו לא יכולים להבטיח את טעינתו ***
+                        if (window.OneSignalDeferred) {
+                            window.OneSignalDeferred.push(function(OneSignal) {
+                                OneSignal.setExternalUserId(clientState.id);
+                                console.log(`OneSignal (Login): External User ID set to client ID: ${clientState.id}`);
+                            });
                         }
                         
                         if (!isRefresh) {
@@ -569,7 +565,9 @@
                         dom.splashScreen.classList.remove('loading');
                         dom.splashScreen.style.display = 'none';
                         promptForClientId();
-                        showToast(`שגיאה בטעינת נתונים: ${error.message}. נסה שוב.`, '❌');
+                        // נשנה את ה-console.error ל-console.warn כדי למנוע את ה-toast מלהופיע שוב אם מדובר בשגיאת טעינה
+                        // showToast(`שגיאה בטעינת נתונים: ${error.message}. נסה שוב.`, '❌');
+                        console.warn(`Attempted login failed: ${error.message}`);
                     }
                 }
                 
@@ -1354,10 +1352,12 @@
                             case 'toggle-profile': dom.profileContainer.classList.toggle('active'); break;
                             case 'logout': 
                                 localStorage.clear(); 
-                                // OneSignal: הסרת מזהה חיצוני בעת התנתקות
-                                if (window.OneSignal) {
-                                    window.OneSignal.removeExternalUserId();
-                                    console.log('OneSignal: External User ID removed on logout.');
+                                // OneSignal FIX: נוודא ש-OneSignalDeferred קיים ומשתמשים ב-push
+                                if (window.OneSignalDeferred) {
+                                    window.OneSignalDeferred.push(function(OneSignal) {
+                                        OneSignal.removeExternalUserId();
+                                        console.log('OneSignal (Logout): External User ID removed on logout.');
+                                    });
                                 }
                                 window.location.reload(); 
                                 break;
