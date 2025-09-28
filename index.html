@@ -353,6 +353,9 @@
         }
 
         async function loadProductCatalog() {
+            // FIX: Re-adding customerId as it seems the deployed script might implicitly require it
+            // for any action after login, even if the function logic itself doesn't use the parameter.
+            // This is a common pattern for simple session validation in GAS.
             const data = await apiPost({ action: 'getProductCatalog', customerId: state.clientId });
             state.productCatalog = (data.catalog || []).map(p => ({
                 ...p, "מק\"ט": p["מק\"ט"] || 'N/A', "שם מוצר": p["שם מוצר"] || 'מוצר ללא שם',
