@@ -940,11 +940,11 @@
                         <p class="text-xs text-text-muted">מק"ט: ${item["מק\"ט"] || 'לא זוהה'}</p>
                     </div>
                     <div class="text-center">
-                         <input type="number" value="${item.quantity}" min="1" class="form-input w-16 text-center p-1 text-sm" data-index="${index}" onchange="window.updateItemQuantity(event.target)">
+                         <input type="number" value="${item.quantity}" min="1" class="form-input w-16 text-center p-1 text-sm" data-index="${index}" onchange="updateItemQuantity(this)">
                          <p class="text-xs text-text-muted mt-1">${item["יחידת מידה"] || 'יח\''}</p>
                          ${totalUnitsText}
                     </div>
-                    <button class="text-red-500 hover:text-red-700" onclick="window.removeItemFromOrder(${index})">&times;</button>
+                    <button class="text-red-500 hover:text-red-700" onclick="removeItemFromOrder(${index})">&times;</button>
                 </div>`;
             }).join('');
         }
@@ -1091,7 +1091,6 @@
         }
 
         // Expose global functions needed by inline HTML attributes
-        // שינוי קריטי: מעביר את ה-event.target במקום את ה-event כולו.
         window.updateItemQuantity = (e) => updateItemQuantity(e.target);
         window.removeItemFromOrder = (index) => removeItemFromOrder(index);
 
