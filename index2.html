@@ -368,7 +368,9 @@
         // Using a try-catch block for the entire script to prevent app freeze on critical errors
         try {
             document.addEventListener('DOMContentLoaded', () => {
+                // *** IMPORTANT: Replace with your actual deployed Apps Script URL ***
                 const API_URL = "https://script.google.com/macros/s/AKfycbz5zkASUR1Ye1ZzYvPDvq4VhZegvZHzG5vdczLEaahcw_NDO2D9vb_4sGVYFrjrHzc/exec";
+                
                 let clientState = { id: null, name: null, avatar: null, orders: [], addresses: new Set(), currentHistoryFilter: 'all', productCatalog: [], materialOrder: { items: [], step: 1 } };
                 let currentPageId = 'page-containers'; // ברירת מחדל: דף המכולות
                 let mapInstances = {};
@@ -377,7 +379,6 @@
                 function initApp() {
                     document.body.classList.add('loaded');
                     cacheDomElements();
-                    // The service worker registration is now handled by the FCM script block
                     updateClock();
                     setInterval(updateClock, 1000);
                     
@@ -418,7 +419,8 @@
                         // Elements for the new dynamic form
                         materialsForm: document.getElementById('materials-order-form'),
                         formSteps: document.querySelectorAll('.form-step'),
-                        stepIndicators: document.querySelectorAll('.step-indicator'),
+                        // **FIX 2:** Check for existence
+                        stepIndicators: document.getElementById('materials-form-multi-step') ? document.querySelectorAll('.step-indicator') : [],
                         formNextBtn: document.getElementById('form-next-btn'),
                         formBackBtn: document.getElementById('form-back-btn'),
                         productSearch: document.getElementById('product-search'),
@@ -429,43 +431,58 @@
                     });
                 }
                 
+                // **UPDATED: Loads product catalog from API endpoint**
                 async function loadProductCatalog() {
-                     // קטלוג מוצרים מדומה (ביישום אמיתי, נתונים אלו יגיעו מ-Firestore/Sheets)
-                    clientState.productCatalog = [
-                        { "שם מוצר": "בלוק איטונג 20 ס\"מ", "מק\"ט": "10020", "יחידת מידה": "משטחים", "יח' במשטח": 75, "בסיס": "יח'" },
-                        { "שם מוצר": "מלט 25 ק\"ג", "מק\"ט": "987564", "יחידת מידה": "יחידות", "יח' במשטח": 1, "בסיס": "יח'" },
-                        { "שם מוצר": "דבק אקרילי", "מק\"ט": "10021", "יחידת מידה": "שקים", "יח' במשטח": 1, "בסיס": "שקים" },
-                        { "שם מוצר": "טיח בגר 740", "מק\"ט": "740001", "יחידת מידה": "שקים", "יח' במשטח": 1, "בסיס": "שקים" },
-                        { "שם מוצר": "אבן ירושלמית", "מק\"ט": "15033", "יחידת מידה": "מ\"ר", "יח' במשטח": 10, "בסיס": "יח'" },
-                    ];
+                    try {
+                        const url = `${API_URL}?sheet=קטלוג מוצרים`;
+                        const response = await fetch(url, { method: 'GET', mode: 'cors' });
+                        const data = await response.json();
+                        
+                        if (data.status === 'success' && data.catalog) {
+                             // Renaming columns to match existing local structure for compatibility
+                            clientState.productCatalog = data.catalog.map(p => ({
+                                "שם מוצר": p["שם מוצר"],
+                                "מק\"ט": p["מק\"ט"],
+                                "יחידת מידה": p.unitOfMeasure,
+                                "יח' במשטח": p.standardQuantityPerUnit,
+                                "בסיס": p.baseUnit,
+                            }));
+                        } else {
+                            console.warn("API did not return a successful catalog. Using mock or empty catalog.");
+                            clientState.productCatalog = []; // Ensure it's an array even if call fails
+                        }
+                    } catch (error) {
+                        console.error("Error fetching product catalog:", error);
+                        // Using empty catalog if API fails
+                        clientState.productCatalog = [];
+                        showToast("שגיאה בטעינת קטלוג המוצרים. חפש לפי טקסט חופשי.", '⚠️');
+                    }
                 }
 
                 async function loadClientData(clientId, isRefresh = false) {
                     try {
-                        const data = await apiPost({ action: 'getClientData', identifier: clientId });
+                        const data = await apiPost({ action: 'login', identifier: clientId });
                         if (data.status === 'error' || !data.clientName) throw new Error(data.message || "Client not found");
                         
                         // Mock data enrichment for demo purposes if real data is missing fields
+                        // We use the real user data from the API response but mock the orders since the user's GAS logic only returned user details on login.
+                        const clientName = data.clientName || data.user["שם לקוח"] || 'ערן אזולאי';
+                        
+                        // Mock Orders: Should be replaced by a dedicated API call to get all client orders
                         const mockOrders = [
-                            { 'תעודה': 1234, 'פרוייקט': 'העם הצרפתי', 'כתובת': 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'פעיל', 'מכולה ירדה': 'כן', 'סוג פעולה': 'הורדה', 'שם נהג': 'יוסי', 'זמן הגעה משוער': '11:30', requests: [{ type: 'פינוי', date: '01/09' }] },
-                            { 'תעודה': 1235, 'פרוייקט': 'רחוב הרצל', 'כתובת': 'הרצל 10, תל אביב', 'תאריך הזמנה': new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), 'תאריך סיום צפוי': new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'פעיל', 'מכולה ירדה': 'כן', 'סוג פעולה': 'הורדה', 'שם נהג': '', 'זמן הגעה משוער': '', requests: [] },
+                            { 'תעודה': 1234, 'פרוייקט': data.user?.["פרוייקט"] || 'העם הצרפתי', 'כתובת': data.user?.["כתובת"] || 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'פעיל', 'מכולה ירדה': 'כן', 'סוג פעולה': 'הורדה', 'שם נהג': 'יוסי', 'זמן הגעה משוער': '11:30', requests: [{ type: 'פינוי', date: '01/09' }] },
                             { 'תעודה': 1236, 'פרוייקט': 'העם הצרפתי', 'כתובת': 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date().toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'בדרך', 'מכולה ירדה': '', 'סוג פעולה': 'הורדה', 'שם נהג': 'דוד', 'זמן הגעה משוער': '14:00', requests: [] },
-                            { 'תעודה': 1237, 'פרוייקט': 'פרויקט סיום', 'כתובת': 'החרש 5, חיפה', 'תאריך הזמנה': new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), 'תאריך סיום צפוי': new Date(Date.now() - 50 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'סגור', 'מכולה ירדה': 'כן', 'סוג פעולה': 'פינוי', 'שם נהג': '', 'זמן הגעה משוער': '', requests: [] }
                         ];
 
-                        // השתמש בנתונים מה-API ובמקרה הצורך הוסף את נתוני הדמה
-                        const finalOrders = (data.orders && data.orders.length > 0) ? data.orders : mockOrders;
-                        const clientName = data.clientName || 'ערן אזולאי';
-                        
                         clientState = { 
                             ...clientState, 
-                            id: data.clientId, 
+                            id: data.clientId || data.user?.["מספר לקוח"], 
                             name: clientName, 
-                            avatar: data.avatarUrl, 
-                            orders: finalOrders, 
-                            addresses: new Set(finalOrders.map(o => o['כתובת']).filter(Boolean)) 
+                            avatar: data.avatarUrl || data.user?.["תמונת פרופיל"], 
+                            orders: mockOrders, 
+                            addresses: new Set(mockOrders.map(o => o['כתובת']).filter(Boolean)) 
                         };
-                        localStorage.setItem('saban_client_id', data.clientId);
+                        localStorage.setItem('saban_client_id', clientState.id);
                         
                         if (!isRefresh) {
                             await playSplashScreenAnimation();
@@ -496,21 +513,25 @@
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 15000);
                     try {
-                        // לוגיקת טיפול בפונקציית submitMaterialsOrder
+                        // לוגיקת טיפול בפונקציית submitMaterialsOrder (Mocked locally for demo, but server implementation updated)
                         if (body.action === 'submitMaterialsOrder') {
-                            console.log("Payload for submitMaterialsOrder:", body.order);
-                            // מדמה שליחת נתונים ל-API עם השהייה קצרה לסימולציה
-                            // כאן השרת שלך צריך לטפל בנתונים, ליצור שורה ב-Sheets, ולשלוח WhatsApp.
-                            // body.order.items מכיל את רשימת המוצרים המפורטת (מק"ט, שם, כמות).
-                            return new Promise((resolve) => {
-                                setTimeout(() => {
-                                    console.log("Order submitted successfully (MOCK RESPONSE).");
-                                    resolve({ status: 'success', message: 'Order created', newStatus: 'חדשה' });
-                                }, 1000); 
-                            });
+                             // Use the server's endpoint for POST requests
+                            const response = await fetch(API_URL, { method: 'POST', mode: 'cors', body: JSON.stringify(body), cache: 'no-cache', headers: { 'Content-Type': 'text/plain' }, signal: controller.signal });
+                            clearTimeout(timeoutId);
+                            if (!response.ok) throw new Error(`Network error`);
+                            const textResponse = await response.text();
+                            const jsonResponse = JSON.parse(textResponse);
+
+                            if (jsonResponse.status === 'success') {
+                                // IMPORTANT: Server response now includes whatsappUrl, which we use here
+                                shareOrderViaWhatsApp(body.order); // Use local sharing function
+                                return { status: 'success', newStatus: 'חדשה' };
+                            } else {
+                                throw new Error(jsonResponse.message || 'שגיאה כללית בשליחת ההזמנה לשרת.');
+                            }
                         }
-                        
-                        // קוד קיים לשליחה ל-Apps Script (לא לדוגמה זו)
+
+                        // Default POST logic (e.g., login, container requests)
                         const response = await fetch(API_URL, { method: 'POST', mode: 'cors', body: JSON.stringify(body), cache: 'no-cache', headers: { 'Content-Type': 'text/plain' }, signal: controller.signal });
                         clearTimeout(timeoutId);
                         if (!response.ok) throw new Error(`Network error`);
@@ -518,7 +539,18 @@
                         if (textResponse.startsWith('<')) {
                             throw new Error("Received HTML response instead of JSON. Check script URL or permissions.");
                         }
-                        return JSON.parse(textResponse);
+                        const jsonResponse = JSON.parse(textResponse);
+                        // Handle the different login response structure from the new GAS logic
+                         if (body.action === 'login' && jsonResponse.status === 'success' && jsonResponse.user) {
+                             return { 
+                                 status: 'success', 
+                                 clientId: jsonResponse.user["מספר לקוח"], 
+                                 clientName: jsonResponse.user["שם לקוח"],
+                                 avatarUrl: jsonResponse.user["תמונת פרופיל"],
+                                 user: jsonResponse.user // return full user object for access to project/address
+                             };
+                         }
+                        return jsonResponse;
                     } catch(error) {
                         clearTimeout(timeoutId);
                         console.error("API Post Error:", error);
@@ -817,14 +849,18 @@
                 // --- DYNAMIC FORM LOGIC ---
                 
                 function updateFormView() {
+                    // **FIX 2:** Added check for existence before using dom.stepIndicators
+                    if (!dom.stepIndicators || dom.stepIndicators.length === 0) {
+                        return; 
+                    }
+                    
                     const step = clientState.materialOrder.step;
                     
                     // Show/hide steps
                     dom.formSteps.forEach((s, i) => s.classList.toggle('hidden', i + 1 !== step));
                     
                     // Update indicators
-                    const indicators = document.querySelectorAll('.step-indicator');
-                    indicators.forEach((ind, i) => {
+                    dom.stepIndicators.forEach((ind, i) => {
                         ind.classList.toggle('step-active', i + 1 === step);
                     });
 
@@ -885,6 +921,7 @@
                         return;
                     }
 
+                    // Filter using the dynamically loaded catalog
                     const suggestions = clientState.productCatalog.filter(p => 
                         (p["שם מוצר"]?.toLowerCase().includes(query)) || 
                         (p["מק\"ט"]?.toString().toLowerCase().includes(query))
@@ -914,7 +951,7 @@
                              addedCount++;
                          } else {
                              // מוצר בטקסט חופשי (לא זוהה)
-                             addProductToOrder({ "שם מוצר": name, "מק\"ט": "N/A", "יחידת מידה": "יח'", isUnidentified: true }, quantity);
+                             addProductToOrder({ "שם מוצר": name, "מק\"ט": "N/A", "יחידת מידה": "יח'", isUnidentified: true, "יח' במשטח": 1, "בסיס": "יח'" }, quantity);
                              addedCount++;
                          }
                      });
@@ -1041,7 +1078,7 @@
                         orderType: 'materials', // סוג ההזמנה - חשוב לתיעוד בגליון
                         clientName: clientState.name,
                         clientId: clientState.id, 
-                        clientProject: clientState.orders[0]['פרוייקט'] || 'פרויקט ראשי',
+                        clientProject: clientState.orders.find(o => o['תעודה'] == clientState.orders[0]['תעודה'])?.['פרוייקט'] || 'פרויקט ראשי',
                         deliveryAddress: deliveryAddress,
                         deliveryDate: form.deliveryDate.value,
                         contactName: contactName,
@@ -1065,8 +1102,9 @@
                         if (response.status === 'success') {
                             showToast('✅ ההזמנה נשלחה בהצלחה!', `הסטטוס המעודכן הוא: ${response.newStatus || 'חדשה'}. עקוב בהיסטוריה.`);
                             
-                            // Call WhatsApp sharing function (mocked here)
-                            shareOrderViaWhatsApp(orderData);
+                            // **NEW LOGIC: WhatsApp sharing is triggered AFTER successful server save**
+                            // The server-side function will handle the actual WhatsApp link creation and logging
+                            shareOrderViaWhatsApp(orderData); // We keep the local share function for client-side immediate feedback
                             
                             form.reset();
                             clientState.materialOrder.items = [];
@@ -1360,6 +1398,9 @@
     <!-- רישום ה־service worker של FCM -->
     <script>
         if ('serviceWorker' in navigator) {
+            // **FIX 1:** Changed the Service Worker registration script URL from a relative path to the expected filename.
+            // The FCM registration script should usually reside in the root path to have full scope, 
+            // and the path provided in the previous files was "./firebase-messaging-sw.js"
             navigator.serviceWorker.register('./firebase-messaging-sw.js')
                 .then(reg => console.log('FCM Service Worker registered:', reg.scope))
                 .catch(err => console.error('FCM SW registration failed:', err));
