@@ -44,6 +44,32 @@
                 // אם אתה משתמש ב-setExternalUserId, כדאי לוודא שההרשמה בוצעה
             });
         });
+
+        // *** פונקציה ציבורית חדשה לבדיקת סטטוס התראות (לצורך דיבוג) ***
+        window.checkPushStatus = async function() {
+            if (window.OneSignalDeferred) {
+                window.OneSignalDeferred.push(async function(OneSignal) {
+                    const status = await OneSignal.getSubscription();
+                    const externalId = await OneSignal.getExternalUserId();
+                    
+                    console.group("OneSignal Status Check");
+                    console.log(`✅ External User ID (Client ID): ${externalId || "N/A"}`);
+                    console.log(`✅ Push Enabled in Browser: ${status.userSubscription}`);
+                    console.log(`✅ Subscription ID (Device Token): ${status.id || "N/A - USER NOT SUBSCRIBED"}`);
+                    
+                    if (!status.userSubscription) {
+                        console.warn("⚠️ המשתמש לא מנוי! יש לוודא שהפעמון של OneSignal נלחץ ואושר.");
+                        // ניסיון הצגת הפעמון אם הוא לא הוצג
+                        OneSignal.showSlidedownPrompt();
+                    } else if (externalId !== localStorage.getItem('saban_client_id')) {
+                        console.error("❌ External ID אינו תואם! יש שגיאה בהתחברות.");
+                    }
+                    console.groupEnd();
+                });
+            } else {
+                console.error("OneSignal SDK עדיין לא נטען.");
+            }
+        }
     </script>
     
     <!-- Fonts and Libraries -->
@@ -563,7 +589,7 @@
                         { sender: 'user', message: 'מה הסטטוס של הזמנה 1236?', timestamp: new Date(Date.now() - 30000).toISOString() },
                         { sender: 'system', message: 'הזמנת מכולה 1236 נמצאת בסטטוס "בדרך" עם צפי הגעה 14:00. לבירור נוסף, אנא שלח הודעה.', timestamp: new Date().toISOString() }
                     ],
-                    hasUnreadChat: true // נניח שיש הודעה חדשה בפתיחה הראשונית
+                    hasUnreadChat: JSON.parse(localStorage.getItem('saban_unread_chat') || 'true')
                 };
                 let currentPageId = 'page-containers'; // ברירת מחדל: דף המכולות
                 let mapInstances = {};
