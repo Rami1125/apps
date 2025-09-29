@@ -731,15 +731,10 @@
                         
                         // Mock Orders: Should be replaced by a dedicated API call to get all client orders
                         const mockContainerOrders = [
-                            { 'תעודה': 1234, 'סוג': 'container', 'פרוייקט': data.user?.["פרוייקט"] || 'העם הצרפתי', 'כתובת': data.user?.["כתובת"] || 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'פעיל', 'מכולה ירדה': 'כן', 'סוג פעולה': 'הורדה', 'שם נהג': 'יוסי', 'זמן הגעה משוער': '', requests: [{ type: 'פינוי', date: '01/09' }] },
-                            { 'תעודה': 1236, 'סוג': 'container', 'פרוייקט': 'העם הצרפתי', 'כתובת': 'העם הצרפתי 64, רמת גן', 'תאריך הזמנה': new Date().toISOString(), 'תאריך סיום צפוי': new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'בדרך', 'מכולה ירדה': '', 'סוג פעולה': 'הורדה', 'שם נהג': 'דוד', 'זמן הגעה משוער': '14:00', requests: [] },
-                        ];
+
 
                         const mockMaterialOrders = [
-                            { 'תעודה': 9001, 'סוג': 'materials', 'פרוייקט': 'שפירא', 'כתובת': 'בן גוריון 10, תל אביב', 'תאריך הזמנה': new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), 'תאריך אספקה מבוקש': new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'בטיפול', 'שם נהג': '', 'זמן הגעה משוער': '', items: [{ name: 'בלוק איטונג', quantity: 200, unit: 'יח\'' }] },
-                            { 'תעודה': 9002, 'סוג': 'materials', 'פרוייקט': 'שפירא', 'כתובת': 'בן גוריון 10, תל אביב', 'תאריך הזמנה': new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), 'תאריך אספקה מבוקש': new Date(Date.now() + 0.5 * 24 * 60 * 60 * 1000).toISOString(), 'סטטוס': 'מוכן למשלוח', 'שם נהג': 'משה', 'זמן הגעה משוער': '10:30', items: [{ name: 'מלט 50 ק"ג', quantity: 50, unit: 'שק' }] },
-                        ];
-                        
+
                         // איחוד כל ההזמנות
                         const allOrders = [...mockContainerOrders, ...mockMaterialOrders];
 
