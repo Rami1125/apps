@@ -8,73 +8,66 @@
     <link rel="manifest" href="./manifest.json">
     <link rel="apple-touch-icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
     <link rel="icon" href="https://i.postimg.cc/2SbDgD1B/1.png">
-
-    <!-- OneSignal SDK for Push Notifications -->
+ <!-- OneSignal SDK for Push Notifications - UPDATED SCRIPT -->
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
         window.OneSignalDeferred = window.OneSignalDeferred || [];
-        
-        // פונקציה לביצוע שיוך External User ID ועדכון סטטוסים.
-        // הקריאה לפונקציה זו מובטחת לקרות רק כשה-SDK של OneSignal מוכן.
+
+        /**
+         * Associates the client ID from your system with the OneSignal device record.
+         * This is crucial for sending notifications to a specific user.
+         * @param {string} clientId - The unique identifier for the client (e.g., '60120').
+         */
         async function setOneSignalExternalId(clientId) {
             if (!clientId || !window.OneSignalDeferred) return;
             
-            // דוחף את הפעולה לתור של OneSignal - תיקון: הפונקציה דוחפת את עצמה לתור!
             window.OneSignalDeferred.push(async function(OneSignal) {
                 try {
-                    // 1. שיוך מזהה הלקוח למכשיר
-                    await OneSignal.setExternalUserId(clientId);
-                    console.log(`OneSignal: External User ID set to client ID: ${clientId}`);
+                    // Ensure the clientId is a string for the OneSignal API
+                    await OneSignal.setExternalUserId(String(clientId)); 
+                    console.log(`OneSignal: External User ID successfully set to: ${clientId}`);
 
-                    // 2. בדיקת סטטוס הרשאה (חסינות מפני שגיאת setExternalUserId)
                     const isSubscribed = await OneSignal.isPushNotificationsEnabled();
-                    
                     if (isSubscribed) {
-                         // הצגת הודעת הצלחה ב-Toast רק אם המשתמש אכן אישר התראות
-                         window.showToast(`✅ Push Notifications מחובר ללקוח ${clientId}`, '🔔');
+                         // Use the app's built-in toast notification system if it exists
+                         if (typeof window.showToast === 'function') {
+                            window.showToast(`ההתראות מחוברות כעת ללקוח ${clientId}`, '🔔');
+                         }
                     } else {
-                         console.warn(`OneSignal: המשתמש מחובר (${clientId}), אך לא אישר הרשאת התראות.`);
-                         // אם ההרשאה חסומה, נציג Prompt כדי שהמשתמש יוכל לאשר
+                         console.warn(`OneSignal: User ${clientId} is logged in but has not subscribed to notifications.`);
+                         // If the user is not subscribed, show the default slide prompt to encourage them
                          OneSignal.showSlidedownPrompt();
                     }
-
                 } catch(e) {
-                    console.error("OneSignal setup failed (External ID):", e);
+                    console.error("OneSignal External ID setup failed:", e);
                 }
             });
         }
         
-        // ------------------
-        // אתחול OneSignal
-        // ------------------
+        // Initialize the OneSignal SDK
         OneSignalDeferred.push(async function(OneSignal) {
-            // *** תיקון 2: עוטפים ב-try/catch כדי למנוע קריסה בסביבת Canvas לא מאושרת ***
             try {
                 await OneSignal.init({
-                    appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3",
-                    safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0",
+                    appId: "acc8a2bc-d54e-4261-b3d2-cc5c5f7b39d3", // YOUR OneSignal App ID
+                    safari_web_id: "web.onesignal.auto.5f4f9ed9-fb2e-4d6a-935d-81aa46fccce0", // YOUR Safari Web ID
                     notifyButton: {
-                        enable: true,
+                        enable: true, // Shows the bell icon
                     },
-                    // תיקון: הסרת scope.
-                    serviceWorkerParam: {
-                        // scope: '/',  <-- הוסר!
-                    },
+                    allowLocalhostAsSecureOrigin: true, // Helpful for local development testing
                 });
                 
-                // קריאה ראשונית לשיוך אם יש Client ID שמור
-                const clientId = localStorage.getItem('saban_client_id');
-                if (clientId) {
-                     // **תיקון תזמון**: קוראים לפונקציה שדוחפת את עצמה לתור שוב, כדי לוודא ששיוך ה-ID קורה רק אחרי אתחול.
-                    setOneSignalExternalId(clientId);
+                // After initialization, if a client is already logged in (e.g., from a previous session),
+                // immediately try to set their external ID.
+                const storedClientId = localStorage.getItem('saban_client_id');
+                if (storedClientId) {
+                    setOneSignalExternalId(storedClientId);
                 }
             } catch (error) {
-                // שגיאה זו תתרחש ב-Canvas שאינו תואם ל-URL המאושר ב-OneSignal
-                console.error("❌ OneSignal Initialization FAILED:", error.message);
-                console.warn("⚠️ ניתן להתעלם משגיאה זו בסביבת הפיתוח (Canvas). היא תיעלם ב-GitHub Pages.");
+                console.error("OneSignal Initialization FAILED:", error.message);
+                console.warn("This error can be ignored in development environments like Canvas. It will resolve on your live Netlify domain.");
             }
         });
-
+    </script>
         // *** פונקציה ציבורית לבדיקת סטטוס התראות (לצורך דיבוג) ***
         window.checkPushStatus = async function() {
             if (window.OneSignalDeferred) {
