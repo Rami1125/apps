@@ -67,39 +67,7 @@
                 console.warn("This error can be ignored in development environments like Canvas. It will resolve on your live Netlify domain.");
             }
         });
-    </script>
-        // *** פונקציה ציבורית לבדיקת סטטוס התראות (לצורך דיבוג) ***
-        window.checkPushStatus = async function() {
-            if (window.OneSignalDeferred) {
-                window.OneSignalDeferred.push(async function(OneSignal) {
-                    try {
-                        const status = await OneSignal.getSubscription();
-                        const externalId = await OneSignal.getExternalUserId();
-                        
-                        console.group("OneSignal Status Check");
-                        console.log(`✅ External User ID (Client ID): ${externalId || "N/A"}`);
-                        console.log(`✅ Push Enabled in Browser: ${status.userSubscription}`);
-                        console.log(`✅ Subscription ID (Device Token): ${status.id || "N/A - USER NOT SUBSCRIBED"}`);
-                        
-                        if (!status.userSubscription) {
-                            console.warn("⚠️ המשתמש לא מנוי! יש לוודא שהפעמון של OneSignal נלחץ ואושר.");
-                            // ניסיון הצגת הפעמון אם הוא לא הוצג
-                            OneSignal.showSlidedownPrompt();
-                        } else if (externalId !== localStorage.getItem('saban_client_id')) {
-                            console.error("❌ External ID אינו תואם! יש שגיאה בהתחברות.");
-                        }
-                        console.groupEnd();
-                        return status; // החזרת הסטטוס לשימוש פנימי
-                    } catch (e) {
-                         console.error("OneSignal Status Check failed (SDK Error):", e.message);
-                    }
-                });
-            } else {
-                console.error("OneSignal SDK עדיין לא נטען.");
-            }
-        }
-    </script>
-    
+   
     <!-- Fonts and Libraries -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
